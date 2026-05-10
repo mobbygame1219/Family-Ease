@@ -20,6 +20,8 @@ interface Member {
   user: { id: string; name: string; email: string };
 }
 
+type SplitMode = 'EQUAL' | 'SHARES' | 'AMOUNT';
+
 export default function NewExpensePage() {
   const router = useRouter();
   const params = useParams();
@@ -29,6 +31,7 @@ export default function NewExpensePage() {
   const [currentUserId, setCurrentUserId] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [splitMode, setSplitMode] = useState<SplitMode>('EQUAL');
 
   const [form, setForm] = useState({
     title: '',
@@ -38,16 +41,32 @@ export default function NewExpensePage() {
     date: new Date().toISOString().split('T')[0],
   });
 
+  // 平分模式：勾選的成員
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
+
+  // 份數模式：每人份數
+  const [shares, setShares] = useState<Record<string, number>>({});
+
+  // 金額模式：每人金額
+  const [amounts, setAmounts] = useState<Record<string, string>>({});
 
   useEffect(() => {
     fetch(`/api/groups/${groupId}/members`)
       .then((r) => r.json())
       .then((data) => {
-        setMembers(data.members ?? []);
+        const ms: Member[] = data.members ?? [];
+        setMembers(ms);
         setCurrentUserId(data.currentUserId ?? '');
         setForm((f) => ({ ...f, paidById: data.currentUserId ?? '' }));
-        setSelectedMembers((data.members ?? []).map((m: Member) => m.user.id));
+        setSelectedMembers(ms.map((m) => m.user.id));
+        const initShares: Record<string, number> = {};
+        const initAmounts: Record<string, string> = {};
+        ms.forEach((m) => {
+          initShares[m.user.id] = 1;
+          initAmounts[m.user.id] = '';
+        });
+        setShares(initShares);
+        setAmounts(initAmounts);
       });
   }, [groupId]);
 
@@ -57,19 +76,69 @@ export default function NewExpensePage() {
     );
   };
 
-  const perPerson =
+  // 計算每人金額（平分）
+  const equalPerPerson =
     selectedMembers.length > 0 && form.amount
       ? (parseFloat(form.amount) / selectedMembers.length).toFixed(0)
       : '0';
 
+  // 計算每人金額（份數）
+  const totalShares = Object.values(shares).reduce((a, b) => a + b, 0);
+  const perShare =
+    totalShares > 0 && form.amount ? parseFloat(form.amount) / totalShares : 0;
+
+  // 計算金額模式總和
+  const amountTotal = Object.values(amounts).reduce(
+    (sum, v) => sum + (parseFloat(v) || 0),
+    0
+  );
+  const amountRemaining = form.amount
+    ? parseFloat(form.amount) - amountTotal
+    : 0;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (selectedMembers.length === 0) {
-      setError('請至少選擇一位分帳成員');
-      return;
-    }
-    setLoading(true);
     setError('');
+
+    let splits: { userId: string; amount: number }[] = [];
+
+    if (splitMode === 'EQUAL') {
+      if (selectedMembers.length === 0) {
+        setError('請至少選擇一位分帳成員');
+        return;
+      }
+      const per = parseFloat(form.amount) / selectedMembers.length;
+      splits = selectedMembers.map((userId) => ({ userId, amount: Math.round(per * 100) / 100 }));
+
+    } else if (splitMode === 'SHARES') {
+      const activeShares = members.filter((m) => (shares[m.user.id] ?? 0) > 0);
+      if (activeShares.length === 0) {
+        setError('請至少設定一位成員的份數');
+        return;
+      }
+      splits = activeShares.map((m) => ({
+        userId: m.user.id,
+        amount: Math.round((perShare * (shares[m.user.id] ?? 0)) * 100) / 100,
+      }));
+
+    } else if (splitMode === 'AMOUNT') {
+      splits = members
+        .filter((m) => parseFloat(amounts[m.user.id] || '0') > 0)
+        .map((m) => ({
+          userId: m.user.id,
+          amount: parseFloat(amounts[m.user.id]),
+        }));
+      if (splits.length === 0) {
+        setError('請至少輸入一位成員的金額');
+        return;
+      }
+      if (Math.abs(amountRemaining) > 0.5) {
+        setError(`金額總和不符，還差 $${amountRemaining.toFixed(0)}`);
+        return;
+      }
+    }
+
+    setLoading(true);
 
     const res = await fetch('/api/expenses', {
       method: 'POST',
@@ -81,8 +150,8 @@ export default function NewExpensePage() {
         paidById: form.paidById,
         date: new Date(form.date).toISOString(),
         groupId,
-        splitType: 'EQUAL',
-        splits: selectedMembers.map((userId) => ({ userId })),
+        splitType: 'EXACT',
+        splits,
       }),
     });
 
@@ -188,42 +257,161 @@ export default function NewExpensePage() {
           />
         </div>
 
-        {/* 分帳成員 */}
+        {/* 分帳模式選擇 */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            分帳成員
-            {form.amount && selectedMembers.length > 0 && (
-              <span className="ml-2 text-green-600 font-normal">
-                每人 ${perPerson}
-              </span>
-            )}
-          </label>
-          <div className="space-y-2">
-            {members.map((m) => (
-              <label
-                key={m.user.id}
-                className={`flex items-center gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${
-                  selectedMembers.includes(m.user.id)
-                    ? 'border-green-400 bg-green-50'
-                    : 'border-gray-200 bg-white'
+          <label className="block text-sm font-medium text-gray-700 mb-2">分帳方式</label>
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { value: 'EQUAL', label: '⚖️ 平分' },
+              { value: 'SHARES', label: '🔢 份數' },
+              { value: 'AMOUNT', label: '💰 金額' },
+            ].map((mode) => (
+              <button
+                key={mode.value}
+                type="button"
+                onClick={() => setSplitMode(mode.value as SplitMode)}
+                className={`rounded-lg border px-3 py-2.5 text-sm font-medium transition-colors ${
+                  splitMode === mode.value
+                    ? 'border-green-500 bg-green-50 text-green-700'
+                    : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
                 }`}
               >
-                <input
-                  type="checkbox"
-                  checked={selectedMembers.includes(m.user.id)}
-                  onChange={() => toggleMember(m.user.id)}
-                  className="accent-green-600"
-                />
-                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-green-100 text-xs font-semibold text-green-700">
-                  {m.user.name?.charAt(0)}
-                </div>
-                <span className="text-sm font-medium text-gray-900">
-                  {m.user.name}{m.user.id === currentUserId ? '（你）' : ''}
-                </span>
-              </label>
+                {mode.label}
+              </button>
             ))}
           </div>
         </div>
+
+        {/* 平分模式 */}
+        {splitMode === 'EQUAL' && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              分帳成員
+              {form.amount && selectedMembers.length > 0 && (
+                <span className="ml-2 text-green-600 font-normal">每人 ${equalPerPerson}</span>
+              )}
+            </label>
+            <div className="space-y-2">
+              {members.map((m) => (
+                <label
+                  key={m.user.id}
+                  className={`flex items-center gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${
+                    selectedMembers.includes(m.user.id)
+                      ? 'border-green-400 bg-green-50'
+                      : 'border-gray-200 bg-white'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedMembers.includes(m.user.id)}
+                    onChange={() => toggleMember(m.user.id)}
+                    className="accent-green-600"
+                  />
+                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-green-100 text-xs font-semibold text-green-700">
+                    {m.user.name?.charAt(0)}
+                  </div>
+                  <span className="text-sm font-medium text-gray-900">
+                    {m.user.name}{m.user.id === currentUserId ? '（你）' : ''}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 份數模式 */}
+        {splitMode === 'SHARES' && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              各人份數
+              {totalShares > 0 && (
+                <span className="ml-2 text-green-600 font-normal">
+                  共 {totalShares} 份，每份 ${perShare.toFixed(0)}
+                </span>
+              )}
+            </label>
+            <div className="space-y-2">
+              {members.map((m) => (
+                <div
+                  key={m.user.id}
+                  className="flex items-center gap-3 rounded-lg border border-gray-200 p-3"
+                >
+                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-green-100 text-xs font-semibold text-green-700 flex-shrink-0">
+                    {m.user.name?.charAt(0)}
+                  </div>
+                  <span className="text-sm font-medium text-gray-900 flex-1">
+                    {m.user.name}{m.user.id === currentUserId ? '（你）' : ''}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShares((s) => ({ ...s, [m.user.id]: Math.max(0, (s[m.user.id] ?? 1) - 1) }))}
+                      className="w-7 h-7 rounded-full border border-gray-300 text-gray-600 hover:bg-gray-50 flex items-center justify-center text-lg leading-none"
+                    >
+                      −
+                    </button>
+                    <span className="w-6 text-center text-sm font-semibold">
+                      {shares[m.user.id] ?? 1}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setShares((s) => ({ ...s, [m.user.id]: (s[m.user.id] ?? 1) + 1 }))}
+                      className="w-7 h-7 rounded-full border border-gray-300 text-gray-600 hover:bg-gray-50 flex items-center justify-center text-lg leading-none"
+                    >
+                      +
+                    </button>
+                  </div>
+                  {totalShares > 0 && form.amount && (
+                    <span className="text-xs text-gray-400 w-16 text-right">
+                      ${(perShare * (shares[m.user.id] ?? 1)).toFixed(0)}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 金額模式 */}
+        {splitMode === 'AMOUNT' && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              各人金額
+              {form.amount && (
+                <span className={`ml-2 font-normal text-sm ${Math.abs(amountRemaining) < 0.5 ? 'text-green-600' : 'text-red-500'}`}>
+                  {Math.abs(amountRemaining) < 0.5 ? '✓ 金額吻合' : `還差 $${amountRemaining.toFixed(0)}`}
+                </span>
+              )}
+            </label>
+            <div className="space-y-2">
+              {members.map((m) => (
+                <div
+                  key={m.user.id}
+                  className="flex items-center gap-3 rounded-lg border border-gray-200 p-3"
+                >
+                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-green-100 text-xs font-semibold text-green-700 flex-shrink-0">
+                    {m.user.name?.charAt(0)}
+                  </div>
+                  <span className="text-sm font-medium text-gray-900 flex-1">
+                    {m.user.name}{m.user.id === currentUserId ? '（你）' : ''}
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-sm text-gray-500">$</span>
+                    <input
+                      type="number"
+                      value={amounts[m.user.id] ?? ''}
+                      onChange={(e) => setAmounts((a) => ({ ...a, [m.user.id]: e.target.value }))}
+                      min="0"
+                      step="1"
+                      placeholder="0"
+                      className="w-24 rounded-lg border border-gray-300 px-2 py-1.5 text-sm text-right focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* 按鈕 */}
         <div className="flex gap-3 pt-2">
