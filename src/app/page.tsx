@@ -1,13 +1,11 @@
-// src/app/page.tsx
 import Link from 'next/link';
 
 export default function HomePage() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-white px-4">
       <div className="max-w-2xl text-center">
-        {/* Logo */}
         <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-green-50 px-4 py-2 text-green-700 font-medium text-sm">
-          💸 SplitEase
+          🏠 FamilyEase
         </div>
 
         <h1 className="mb-4 text-5xl font-bold tracking-tight text-gray-900">
@@ -16,8 +14,7 @@ export default function HomePage() {
         </h1>
 
         <p className="mb-8 text-lg text-gray-500 leading-relaxed">
-          Track shared expenses with friends, roommates, and travel groups.
-          See who owes what — and settle up instantly.
+          和家人一起記錄共同支出，清楚掌握誰該付多少，一鍵結清帳款。
         </p>
 
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -25,22 +22,21 @@ export default function HomePage() {
             href="/auth/register"
             className="rounded-xl bg-green-600 px-6 py-3 text-white font-semibold hover:bg-green-700 transition-colors"
           >
-            Get started for free
+            免費開始使用
           </Link>
           <Link
             href="/auth/login"
             className="rounded-xl border border-gray-200 bg-white px-6 py-3 text-gray-700 font-semibold hover:bg-gray-50 transition-colors"
           >
-            Sign in
+            登入
           </Link>
         </div>
 
-        {/* Feature highlights */}
         <div className="mt-16 grid grid-cols-1 sm:grid-cols-3 gap-6 text-left">
           {[
-            { icon: '👥', title: 'Groups', desc: 'Create groups for trips, home, and more' },
-            { icon: '🧮', title: 'Smart splits', desc: 'Split equally, by amount, or by percentage' },
-            { icon: '✅', title: 'Settle up', desc: 'Track and record payments between friends' },
+            { icon: '👥', title: '家庭群組', desc: '建立群組，邀請家人一起記帳' },
+            { icon: '🧮', title: '彈性分帳', desc: '平均分、自訂金額、按比例都可以' },
+            { icon: '✅', title: '輕鬆結清', desc: '追蹤並記錄家人之間的付款' },
           ].map((f) => (
             <div key={f.title} className="rounded-xl border border-gray-100 bg-gray-50 p-4">
               <div className="mb-2 text-2xl">{f.icon}</div>
