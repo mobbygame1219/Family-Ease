@@ -68,7 +68,14 @@ export async function PUT(
       },
     },
   });
-
+await prisma.activity.create({
+  data: {
+    type: 'EXPENSE_ADDED',
+    message: `編輯了支出「${title}」$${amount}`,
+    userId: session.user.id,
+    groupId: expense.groupId,
+  },
+});
   return NextResponse.json(updated);
 }
 
@@ -96,6 +103,13 @@ export async function DELETE(
   }
 
   await prisma.expense.delete({ where: { id: params.id } });
-
+await prisma.activity.create({
+  data: {
+    type: 'EXPENSE_DELETED',
+    message: `刪除了支出「${expense.title}」$${expense.amount}`,
+    userId: session.user.id,
+    groupId: expense.groupId,
+  },
+});
   return NextResponse.json({ success: true });
 }
