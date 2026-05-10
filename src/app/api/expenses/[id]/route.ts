@@ -21,7 +21,6 @@ export async function DELETE(
     return NextResponse.json({ error: '找不到此支出' }, { status: 404 });
   }
 
-  // 只有付款人或群組管理員可以刪除
   const isMember = expense.group.members.some((m) => m.userId === session.user.id);
   if (!isMember) {
     return NextResponse.json({ error: '你沒有權限刪除此支出' }, { status: 403 });
