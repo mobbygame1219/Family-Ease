@@ -46,10 +46,10 @@ export default function ExpenseChart({ data }: Props) {
             ))}
           </Pie>
           <Tooltip
-            formatter={(value: number) =>
-              `$${value.toLocaleString('zh-TW', { minimumFractionDigits: 0 })}`
-            }
-          />
+  formatter={(value) =>
+    `$${Number(value).toLocaleString('zh-TW', { minimumFractionDigits: 0 })}`
+  }
+/>
           <Legend />
         </PieChart>
       </ResponsiveContainer>
