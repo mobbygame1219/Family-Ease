@@ -28,24 +28,19 @@ async function getDashboardData(userId: string) {
     }),
   ]);
 
-  // Compute total owed / owe
   const unsettledSplits = await prisma.expenseSplit.findMany({
     where: { userId, settled: false },
     include: { expense: { select: { paidById: true, amount: true } } },
   });
 
-  let totalOwed = 0;   // others owe me
-  let totalOwe = 0;    // I owe others
+  let totalOwed = 0;
+  let totalOwe = 0;
 
   for (const split of unsettledSplits) {
-    if (split.expense.paidById === userId) {
-      // I paid, others owe me — but this split represents my own share, skip
-      continue;
-    }
+    if (split.expense.paidById === userId) continue;
     totalOwe += split.amount;
   }
 
-  // Expenses I paid where others owe me
   const myPaidSplits = await prisma.expenseSplit.findMany({
     where: { expense: { paidById: userId }, settled: false, userId: { not: userId } },
     select: { amount: true },
@@ -65,43 +60,43 @@ export default async function DashboardPage() {
     <div className="p-6 max-w-4xl mx-auto">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900">
-          Hi, {session!.user.name?.split(' ')[0]} 👋
+          嗨，{session!.user.name?.split(' ')[0]} 👋
         </h1>
-        <p className="text-gray-500 text-sm mt-1">Here's your expense overview</p>
+        <p className="text-gray-500 text-sm mt-1">這是你的支出總覽</p>
       </div>
 
-      {/* Balance summary cards */}
+      {/* 餘額卡片 */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         <div className="rounded-xl border border-gray-200 bg-white p-5">
-          <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">You are owed</div>
+          <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">別人欠你</div>
           <div className="text-2xl font-bold text-green-600">{formatCurrency(totalOwed)}</div>
         </div>
         <div className="rounded-xl border border-gray-200 bg-white p-5">
-          <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">You owe</div>
+          <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">你欠別人</div>
           <div className="text-2xl font-bold text-red-500">{formatCurrency(totalOwe)}</div>
         </div>
         <div className="rounded-xl border border-gray-200 bg-white p-5">
-          <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Net balance</div>
+          <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">淨餘額</div>
           <div className={`text-2xl font-bold ${netBalance >= 0 ? 'text-green-600' : 'text-red-500'}`}>
             {netBalance >= 0 ? '+' : ''}{formatCurrency(netBalance)}
           </div>
         </div>
       </div>
 
-      {/* Groups */}
+      {/* 群組 */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">Your groups</h2>
+          <h2 className="text-lg font-semibold text-gray-900">你的群組</h2>
           <Link href="/groups/new" className="text-sm text-green-600 font-medium hover:underline">
-            + New group
+            + 新增群組
           </Link>
         </div>
 
         {groups.length === 0 ? (
           <div className="rounded-xl border border-dashed border-gray-300 p-8 text-center">
-            <p className="text-gray-400 text-sm mb-3">No groups yet</p>
+            <p className="text-gray-400 text-sm mb-3">還沒有群組</p>
             <Link href="/groups/new" className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700">
-              Create your first group
+              建立第一個群組
             </Link>
           </div>
         ) : (
@@ -115,7 +110,7 @@ export default async function DashboardPage() {
                   </div>
                   <div>
                     <div className="font-semibold text-gray-900 text-sm">{g.name}</div>
-                    <div className="text-xs text-gray-400">{g.members.length} members · {g._count.expenses} expenses</div>
+                    <div className="text-xs text-gray-400">{g.members.length} 位成員 · {g._count.expenses} 筆支出</div>
                   </div>
                 </div>
               </Link>
@@ -124,11 +119,11 @@ export default async function DashboardPage() {
         )}
       </div>
 
-      {/* Recent expenses */}
+      {/* 最近支出 */}
       <div>
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent expenses</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">最近的支出</h2>
         {recentExpenses.length === 0 ? (
-          <p className="text-gray-400 text-sm">No expenses yet.</p>
+          <p className="text-gray-400 text-sm">還沒有支出記錄</p>
         ) : (
           <div className="rounded-xl border border-gray-200 bg-white divide-y divide-gray-100">
             {recentExpenses.map((e) => {
@@ -143,10 +138,10 @@ export default async function DashboardPage() {
                   <div className="text-right">
                     <div className="text-sm font-semibold text-gray-900">{formatCurrency(e.amount)}</div>
                     {!iPaid && myShare > 0 && (
-                      <div className="text-xs text-red-500">you owe {formatCurrency(myShare)}</div>
+                      <div className="text-xs text-red-500">你欠 {formatCurrency(myShare)}</div>
                     )}
                     {iPaid && (
-                      <div className="text-xs text-green-600">you paid</div>
+                      <div className="text-xs text-green-600">你付款</div>
                     )}
                   </div>
                 </div>
