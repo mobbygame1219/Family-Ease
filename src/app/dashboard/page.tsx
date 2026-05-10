@@ -1,4 +1,5 @@
 // src/app/dashboard/page.tsx
+import ActivityFeed from '@/components/ActivityFeed';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
@@ -55,13 +56,23 @@ async function getDashboardData(userId: string) {
     _sum: { amount: true },
     orderBy: { _sum: { amount: 'desc' } },
   });
-
-  return { groups, recentExpenses, totalOwed, totalOwe, categoryStats };
+const activities = await prisma.activity.findMany({
+  where: {
+    group: { members: { some: { userId } } },
+  },
+  include: {
+    user: { select: { id: true, name: true } },
+    group: { select: { id: true, name: true } },
+  },
+  orderBy: { createdAt: 'desc' },
+  take: 10,
+});
+  return { groups, recentExpenses, totalOwed, totalOwe, categoryStats, activities };
 }
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
-  const { groups, recentExpenses, totalOwed, totalOwe, categoryStats } = await getDashboardData(session!.user.id);
+  const { groups, recentExpenses, totalOwed, totalOwe, categoryStats, activities } = await getDashboardData(session!.user.id);
 
   const netBalance = totalOwed - totalOwe;
 
@@ -166,6 +177,11 @@ export default async function DashboardPage() {
           <ExpenseChart data={categoryStats} />
         </div>
       )}
+  {/* 最近動態 */}
+<div className="mt-8">
+  <h2 className="text-lg font-semibold text-gray-900 mb-4">最近動態</h2>
+  <ActivityFeed activities={activities} />
+</div>
     </div>
   );
 }

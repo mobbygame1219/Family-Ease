@@ -18,6 +18,7 @@ export default function SettlementsPage() {
   const [currentUserId, setCurrentUserId] = useState('');
   const [loading, setLoading] = useState(true);
   const [settling, setSettling] = useState<string | null>(null);
+  const [customAmounts, setCustomAmounts] = useState<Record<string, string>>({});
   const [done, setDone] = useState<string[]>([]);
 
   useEffect(() => {
@@ -30,24 +31,38 @@ export default function SettlementsPage() {
       });
   }, []);
 
-  const handleSettle = async (debt: Debt) => {
-    const key = `${debt.fromId}-${debt.toId}-${debt.groupId}`;
-    setSettling(key);
+const [customAmounts, setCustomAmounts] = useState<Record<string, string>>({});
 
-    await fetch('/api/settlements', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        payerId: debt.fromId,
-        receiverId: debt.toId,
-        amount: debt.amount,
-        groupId: debt.groupId,
-      }),
-    });
+const handleSettle = async (debt: Debt) => {
+  const key = `${debt.fromId}-${debt.toId}-${debt.groupId}`;
+  const inputAmount = parseFloat(customAmounts[key] || String(debt.amount));
 
-    setDone((prev) => [...prev, key]);
-    setSettling(null);
-  };
+  if (isNaN(inputAmount) || inputAmount <= 0) {
+    alert('請輸入正確的金額');
+    return;
+  }
+
+  if (inputAmount > debt.amount) {
+    alert(`金額不能超過 ${formatCurrency(debt.amount)}`);
+    return;
+  }
+
+  setSettling(key);
+
+  await fetch('/api/settlements', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      payerId: debt.fromId,
+      receiverId: debt.toId,
+      amount: inputAmount,
+      groupId: debt.groupId,
+    }),
+  });
+
+  setDone((prev) => [...prev, key]);
+  setSettling(null);
+};
 
   const iOwe = debts.filter((d) => d.fromId === currentUserId);
   const owedToMe = debts.filter((d) => d.toId === currentUserId);
@@ -103,18 +118,32 @@ export default function SettlementsPage() {
                         </div>
                       </div>
                       {isDone ? (
-                        <div className="rounded-lg bg-gray-100 px-4 py-2 text-sm text-gray-400">
-                          ✓ 已結清
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => handleSettle(debt)}
-                          disabled={settling === key}
-                          className="rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-60 transition-colors"
-                        >
-                          {settling === key ? '處理中…' : '標記結清'}
-                        </button>
-                      )}
+  <div className="rounded-lg bg-gray-100 px-4 py-2 text-sm text-gray-400">
+    ✓ 已結清
+  </div>
+) : (
+  <div className="flex items-center gap-2">
+    <div className="flex items-center gap-1">
+      <span className="text-sm text-gray-500">$</span>
+      <input
+        type="number"
+        value={customAmounts[key] ?? ''}
+        onChange={(e) => setCustomAmounts((a) => ({ ...a, [key]: e.target.value }))}
+        placeholder={String(Math.round(debt.amount))}
+        min="1"
+        max={debt.amount}
+        className="w-24 rounded-lg border border-gray-300 px-2 py-1.5 text-sm text-right focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+      />
+    </div>
+    <button
+      onClick={() => handleSettle(debt)}
+      disabled={settling === key}
+      className="rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-60 transition-colors whitespace-nowrap"
+    >
+      {settling === key ? '處理中…' : '標記結清'}
+    </button>
+  </div>
+)}
                     </div>
                   );
                 })}
@@ -149,18 +178,32 @@ export default function SettlementsPage() {
                         </div>
                       </div>
                       {isDone ? (
-                        <div className="rounded-lg bg-gray-100 px-4 py-2 text-sm text-gray-400">
-                          ✓ 已結清
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => handleSettle(debt)}
-                          disabled={settling === key}
-                          className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-60 transition-colors"
-                        >
-                          {settling === key ? '處理中…' : '確認收款'}
-                        </button>
-                      )}
+  <div className="rounded-lg bg-gray-100 px-4 py-2 text-sm text-gray-400">
+    ✓ 已結清
+  </div>
+) : (
+  <div className="flex items-center gap-2">
+    <div className="flex items-center gap-1">
+      <span className="text-sm text-gray-500">$</span>
+      <input
+        type="number"
+        value={customAmounts[key] ?? ''}
+        onChange={(e) => setCustomAmounts((a) => ({ ...a, [key]: e.target.value }))}
+        placeholder={String(Math.round(debt.amount))}
+        min="1"
+        max={debt.amount}
+        className="w-24 rounded-lg border border-gray-300 px-2 py-1.5 text-sm text-right focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+      />
+    </div>
+    <button
+      onClick={() => handleSettle(debt)}
+      disabled={settling === key}
+      className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-60 transition-colors whitespace-nowrap"
+    >
+      {settling === key ? '處理中…' : '確認收款'}
+    </button>
+  </div>
+)}
                     </div>
                   );
                 })}

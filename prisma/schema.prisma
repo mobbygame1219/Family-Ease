@@ -9,20 +9,21 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String
-  email         String    @unique
-  password      String
-  avatarUrl     String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  avatarUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  groupMembers  GroupMember[]
-  paidExpenses  Expense[]       @relation("Payer")
-  splits        ExpenseSplit[]
-  sentSettlements     Settlement[] @relation("Payer")
-  receivedSettlements Settlement[] @relation("Receiver")
+  groupMembers        GroupMember[]
+  paidExpenses        Expense[]      @relation("Payer")
+  splits              ExpenseSplit[]
+  sentSettlements     Settlement[]   @relation("Payer")
+  receivedSettlements Settlement[]   @relation("Receiver")
+  activities          Activity[]
 }
 
 model Group {
@@ -39,6 +40,7 @@ model Group {
   members     GroupMember[]
   expenses    Expense[]
   settlements Settlement[]
+  Activity    Activity[]
 }
 
 enum GroupCategory {
@@ -50,9 +52,9 @@ enum GroupCategory {
 }
 
 model GroupMember {
-  id       String   @id @default(cuid())
+  id       String     @id @default(cuid())
   role     MemberRole @default(MEMBER)
-  joinedAt DateTime @default(now())
+  joinedAt DateTime   @default(now())
 
   userId  String
   groupId String
@@ -69,15 +71,15 @@ enum MemberRole {
 }
 
 model Expense {
-  id          String      @id @default(cuid())
+  id          String          @id @default(cuid())
   title       String
   description String?
   amount      Float
-  currency    String      @default("USD")
+  currency    String          @default("USD")
   category    ExpenseCategory @default(OTHER)
-  date        DateTime    @default(now())
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  date        DateTime        @default(now())
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
 
   paidById String
   groupId  String
@@ -100,9 +102,9 @@ enum ExpenseCategory {
 }
 
 model ExpenseSplit {
-  id        String  @id @default(cuid())
+  id        String    @id @default(cuid())
   amount    Float
-  settled   Boolean @default(false)
+  settled   Boolean   @default(false)
   settledAt DateTime?
 
   expenseId String
@@ -125,7 +127,27 @@ model Settlement {
   receiverId String
   groupId    String
 
-  payer    User  @relation("Payer",    fields: [payerId],    references: [id])
+  payer    User  @relation("Payer", fields: [payerId], references: [id])
   receiver User  @relation("Receiver", fields: [receiverId], references: [id])
   group    Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+}
+
+model Activity {
+  id        String       @id @default(cuid())
+  type      ActivityType
+  message   String
+  createdAt DateTime     @default(now())
+
+  userId  String
+  groupId String
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+}
+
+enum ActivityType {
+  EXPENSE_ADDED
+  EXPENSE_DELETED
+  SETTLEMENT
+  MEMBER_JOINED
 }
