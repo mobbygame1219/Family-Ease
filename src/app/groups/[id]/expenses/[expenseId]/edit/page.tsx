@@ -163,7 +163,8 @@ export default function EditExpensePage() {
       return;
     }
 
-    router.push(`/groups/${groupId}`);
+ router.push(`/groups/${groupId}`);
+router.refresh();
   };
 
   if (fetching) {
