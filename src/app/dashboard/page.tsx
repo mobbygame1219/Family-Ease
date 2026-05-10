@@ -1,10 +1,9 @@
-// src/app/dashboard/page.tsx
-import ActivityFeed from '@/components/ActivityFeed';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 import { formatCurrency } from '@/utils/balance';
+import ActivityFeed from '@/components/ActivityFeed';
 import ExpenseChart from '@/components/ExpenseChart';
 
 async function getDashboardData(userId: string) {
@@ -49,104 +48,115 @@ async function getDashboardData(userId: string) {
   });
   totalOwed = myPaidSplits.reduce((sum, s) => sum + s.amount, 0);
 
-// 各類別統計
   const categoryStats = await prisma.expense.groupBy({
     by: ['category'],
     where: { group: { members: { some: { userId } } } },
     _sum: { amount: true },
     orderBy: { _sum: { amount: 'desc' } },
   });
-const activities = await prisma.activity.findMany({
-  where: {
-    group: { members: { some: { userId } } },
-  },
-  include: {
-    user: { select: { id: true, name: true } },
-    group: { select: { id: true, name: true } },
-  },
-  orderBy: { createdAt: 'desc' },
-  take: 10,
-});
+
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+  const activities = await prisma.activity.findMany({
+    where: {
+      group: { members: { some: { userId } } },
+      createdAt: { gte: sevenDaysAgo },
+    },
+    include: {
+      user: { select: { id: true, name: true } },
+      group: { select: { id: true, name: true } },
+    },
+    orderBy: { createdAt: 'desc' },
+    take: 20,
+  });
+
   return { groups, recentExpenses, totalOwed, totalOwe, categoryStats, activities };
 }
 
+const features = [
+  {
+    href: '/splitease',
+    icon: '💰',
+    title: 'SplitEase',
+    desc: '分帳、記錄支出、結清帳款',
+    color: 'bg-green-50 border-green-200 hover:border-green-400',
+    iconBg: 'bg-green-100',
+  },
+  {
+    href: '/fridge',
+    icon: '🧊',
+    title: 'Family Fridge',
+    desc: '管理冰箱食材、掃描收據、設計菜單',
+    color: 'bg-blue-50 border-blue-200 hover:border-blue-400',
+    iconBg: 'bg-blue-100',
+  },
+];
+
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
-  const { groups, recentExpenses, totalOwed, totalOwe, categoryStats, activities } = await getDashboardData(session!.user.id);
+  const { groups, recentExpenses, totalOwed, totalOwe, categoryStats, activities } =
+    await getDashboardData(session!.user.id);
 
   const netBalance = totalOwed - totalOwe;
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
+      {/* 歡迎標題 */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900">
           嗨，{session!.user.name?.split(' ')[0]} 👋
         </h1>
-        <p className="text-gray-500 text-sm mt-1">這是你的支出總覽</p>
+        <p className="text-gray-500 text-sm mt-1">歡迎回到 FamilyEase</p>
       </div>
 
-      {/* 餘額卡片 */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-        <div className="rounded-xl border border-gray-200 bg-white p-5">
-          <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">別人欠你</div>
-          <div className="text-2xl font-bold text-green-600">{formatCurrency(totalOwed)}</div>
-        </div>
-        <div className="rounded-xl border border-gray-200 bg-white p-5">
-          <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">你欠別人</div>
-          <div className="text-2xl font-bold text-red-500">{formatCurrency(totalOwe)}</div>
-        </div>
-        <div className="rounded-xl border border-gray-200 bg-white p-5">
-          <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">淨餘額</div>
-          <div className={`text-2xl font-bold ${netBalance >= 0 ? 'text-green-600' : 'text-red-500'}`}>
-            {netBalance >= 0 ? '+' : ''}{formatCurrency(netBalance)}
-          </div>
-        </div>
+      {/* 功能模組卡片 */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
+        {features.map((f) => (
+          <Link
+            key={f.href}
+            href={f.href}
+            className={`rounded-xl border p-6 transition-all hover:shadow-md ${f.color}`}
+          >
+            <div className={`flex h-12 w-12 items-center justify-center rounded-full ${f.iconBg} text-2xl mb-4`}>
+              {f.icon}
+            </div>
+            <div className="font-bold text-gray-900 text-lg mb-1">{f.title}</div>
+            <div className="text-sm text-gray-500">{f.desc}</div>
+          </Link>
+        ))}
       </div>
 
-      {/* 群組 */}
+      {/* SplitEase 快速總覽 */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">你的群組</h2>
-          <Link href="/groups/new" className="text-sm text-green-600 font-medium hover:underline">
-            + 新增群組
+          <h2 className="text-lg font-semibold text-gray-900">💰 SplitEase 總覽</h2>
+          <Link href="/splitease" className="text-sm text-green-600 hover:underline">
+            查看更多 →
           </Link>
         </div>
 
-        {groups.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-gray-300 p-8 text-center">
-            <p className="text-gray-400 text-sm mb-3">還沒有群組</p>
-            <Link href="/groups/new" className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700">
-              建立第一個群組
-            </Link>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+          <div className="rounded-xl border border-gray-200 bg-white p-5">
+            <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">別人欠你</div>
+            <div className="text-2xl font-bold text-green-600">{formatCurrency(totalOwed)}</div>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {groups.map((g) => (
-              <Link key={g.id} href={`/groups/${g.id}`}
-                className="rounded-xl border border-gray-200 bg-white p-4 hover:border-green-300 hover:shadow-sm transition-all">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100 text-lg">
-                    {g.category === 'TRIP' ? '✈️' : g.category === 'HOME' ? '🏠' : g.category === 'FOOD' ? '🍕' : '👥'}
-                  </div>
-                  <div>
-                    <div className="font-semibold text-gray-900 text-sm">{g.name}</div>
-                    <div className="text-xs text-gray-400">{g.members.length} 位成員 · {g._count.expenses} 筆支出</div>
-                  </div>
-                </div>
-              </Link>
-            ))}
+          <div className="rounded-xl border border-gray-200 bg-white p-5">
+            <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">你欠別人</div>
+            <div className="text-2xl font-bold text-red-500">{formatCurrency(totalOwe)}</div>
           </div>
-        )}
-      </div>
+          <div className="rounded-xl border border-gray-200 bg-white p-5">
+            <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">淨餘額</div>
+            <div className={`text-2xl font-bold ${netBalance >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+              {netBalance >= 0 ? '+' : ''}{formatCurrency(netBalance)}
+            </div>
+          </div>
+        </div>
 
-      {/* 最近支出 */}
-      <div>
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">最近的支出</h2>
-        {recentExpenses.length === 0 ? (
-          <p className="text-gray-400 text-sm">還沒有支出記錄</p>
-        ) : (
+        {/* 最近支出 */}
+        {recentExpenses.length > 0 && (
           <div className="rounded-xl border border-gray-200 bg-white divide-y divide-gray-100">
-            {recentExpenses.map((e) => {
+            {recentExpenses.slice(0, 4).map((e) => {
               const myShare = e.splits[0]?.amount ?? 0;
               const iPaid = e.paidBy.id === session!.user.id;
               return (
@@ -157,12 +167,11 @@ export default async function DashboardPage() {
                   </div>
                   <div className="text-right">
                     <div className="text-sm font-semibold text-gray-900">{formatCurrency(e.amount)}</div>
-                    {!iPaid && myShare > 0 && (
-                      <div className="text-xs text-red-500">你欠 {formatCurrency(myShare)}</div>
-                    )}
-                    {iPaid && (
+                    {iPaid ? (
                       <div className="text-xs text-green-600">你付款</div>
-                    )}
+                    ) : myShare > 0 ? (
+                      <div className="text-xs text-red-500">你欠 {formatCurrency(myShare)}</div>
+                    ) : null}
                   </div>
                 </div>
               );
@@ -170,18 +179,20 @@ export default async function DashboardPage() {
           </div>
         )}
       </div>
-    {/* 支出圖表 */}
+
+      {/* 支出圖表 */}
       {categoryStats.length > 0 && (
-        <div className="mt-8">
+        <div className="mb-8">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">支出類別分析</h2>
           <ExpenseChart data={categoryStats} />
         </div>
       )}
-  {/* 最近動態 */}
-<div className="mt-8">
-  <h2 className="text-lg font-semibold text-gray-900 mb-4">最近動態</h2>
-  <ActivityFeed activities={activities} />
-</div>
+
+      {/* 最近動態 */}
+      <div>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">最近動態</h2>
+        <ActivityFeed activities={activities} />
+      </div>
     </div>
   );
 }
