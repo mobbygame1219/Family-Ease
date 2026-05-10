@@ -82,6 +82,15 @@ export async function POST(request: Request) {
       },
     });
 
+    // 記錄活動
+await prisma.activity.create({
+  data: {
+    type: 'EXPENSE_ADDED',
+    message: `新增了支出「${expense.title}」$${expense.amount}`,
+    userId: session.user.id,
+    groupId: data.groupId,
+  },
+});
     return NextResponse.json(expense, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
