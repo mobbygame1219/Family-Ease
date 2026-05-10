@@ -6,6 +6,5 @@ import AppLayout from '@/components/layout/AppLayout';
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession(authOptions);
   if (!session?.user) redirect('/auth/login');
-
   return <AppLayout user={session.user}>{children}</AppLayout>;
 }
