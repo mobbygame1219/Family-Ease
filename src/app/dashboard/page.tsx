@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 import { formatCurrency } from '@/utils/balance';
+import ExpenseChart from '@/components/ExpenseChart';
 
 async function getDashboardData(userId: string) {
   const [groups, recentExpenses] = await Promise.all([
@@ -47,12 +48,20 @@ async function getDashboardData(userId: string) {
   });
   totalOwed = myPaidSplits.reduce((sum, s) => sum + s.amount, 0);
 
-  return { groups, recentExpenses, totalOwed, totalOwe };
+// 各類別統計
+  const categoryStats = await prisma.expense.groupBy({
+    by: ['category'],
+    where: { group: { members: { some: { userId } } } },
+    _sum: { amount: true },
+    orderBy: { _sum: { amount: 'desc' } },
+  });
+
+  return { groups, recentExpenses, totalOwed, totalOwe, categoryStats };
 }
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
-  const { groups, recentExpenses, totalOwed, totalOwe } = await getDashboardData(session!.user.id);
+  const { groups, recentExpenses, totalOwed, totalOwe, categoryStats } = await getDashboardData(session!.user.id);
 
   const netBalance = totalOwed - totalOwe;
 
@@ -150,6 +159,13 @@ export default async function DashboardPage() {
           </div>
         )}
       </div>
+    {/* 支出圖表 */}
+      {categoryStats.length > 0 && (
+        <div className="mt-8">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">支出類別分析</h2>
+          <ExpenseChart data={categoryStats} />
+        </div>
+      )}
     </div>
   );
 }
