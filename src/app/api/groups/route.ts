@@ -1,6 +1,7 @@
 // src/app/api/groups/route.ts
 import { NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 
@@ -10,9 +11,9 @@ const createGroupSchema = z.object({
   category: z.enum(['HOME', 'TRIP', 'FOOD', 'WORK', 'OTHER']).default('OTHER'),
 });
 
-// GET /api/groups — list groups for the current user
+// GET /api/groups ??list groups for the current user
 export async function GET() {
-  const session = await auth();
+  const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -31,9 +32,9 @@ export async function GET() {
   return NextResponse.json(groups);
 }
 
-// POST /api/groups — create a new group
+// POST /api/groups ??create a new group
 export async function POST(request: Request) {
-  const session = await auth();
+  const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
