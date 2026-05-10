@@ -23,10 +23,9 @@ interface SidebarProps {
 }
 
 const navItems = [
-  { href: '/dashboard', icon: LayoutDashboard, label: '總覽' },
-  { href: '/groups', icon: Users, label: '群組' },
-  { href: '/expenses', icon: Receipt, label: '支出' },
-  { href: '/settlements', icon: ArrowLeftRight, label: '結清帳款' },
+  { href: '/dashboard', icon: LayoutDashboard, label: '家庭首頁' },
+  { href: '/splitease', icon: Receipt, label: 'SplitEase' },
+  { href: '/fridge', icon: Users, label: 'Family Fridge' },
 ];
 
 export default function Sidebar({ user }: SidebarProps) {
