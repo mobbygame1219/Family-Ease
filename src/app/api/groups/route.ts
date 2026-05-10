@@ -1,4 +1,3 @@
-// src/app/api/groups/route.ts
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
@@ -11,7 +10,6 @@ const createGroupSchema = z.object({
   category: z.enum(['HOME', 'TRIP', 'FOOD', 'WORK', 'OTHER']).default('OTHER'),
 });
 
-// GET /api/groups ??list groups for the current user
 export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
@@ -32,7 +30,6 @@ export async function GET() {
   return NextResponse.json(groups);
 }
 
-// POST /api/groups ??create a new group
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
