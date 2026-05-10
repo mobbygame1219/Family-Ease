@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 
 export default function DeleteExpense({
   expenseId,
@@ -10,14 +9,19 @@ export default function DeleteExpense({
   expenseId: string;
   expenseTitle: string;
 }) {
-  const router = useRouter();
   const [confirming, setConfirming] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleDelete = async () => {
     setLoading(true);
-    await fetch(`/api/expenses/${expenseId}`, { method: 'DELETE' });
-    router.refresh();
+    const res = await fetch(`/api/expenses/${expenseId}`, { method: 'DELETE' });
+    if (res.ok) {
+      window.location.reload();
+    } else {
+      alert('刪除失敗，請再試一次');
+      setLoading(false);
+      setConfirming(false);
+    }
   };
 
   if (confirming) {
@@ -33,6 +37,7 @@ export default function DeleteExpense({
         </button>
         <button
           onClick={() => setConfirming(false)}
+          disabled={loading}
           className="text-xs text-gray-400 hover:underline"
         >
           取消
