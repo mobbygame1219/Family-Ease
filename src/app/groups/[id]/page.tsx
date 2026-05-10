@@ -45,7 +45,6 @@ export default async function GroupPage({ params }: { params: { id: string } }) 
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
-      {/* 群組標題 */}
       <div className="flex items-center gap-4 mb-8">
         <div className="flex h-14 w-14 items-center justify-center rounded-full bg-green-100 text-3xl">
           {categoryIcon(group.category)}
@@ -59,7 +58,6 @@ export default async function GroupPage({ params }: { params: { id: string } }) 
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* 左欄：支出列表 */}
         <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-gray-900">支出記錄</h2>
@@ -88,35 +86,40 @@ export default async function GroupPage({ params }: { params: { id: string } }) 
                 const mysplits = e.splits.filter((s) => s.userId === session!.user.id);
                 const myAmount = mysplits.reduce((sum, s) => sum + s.amount, 0);
                 const iPaid = e.paidBy.id === session!.user.id;
-                return (<div key={e.id} className="flex items-center justify-between p-4 group">
-  <div>
-    <div className="font-medium text-sm text-gray-900">{e.title}</div>
-    <div className="text-xs text-gray-400 mt-0.5">
-      {e.paidBy.name} 付款 · {new Date(e.date).toLocaleDateString('zh-TW')}
-    </div>
-  </div>
-  <div className="flex items-center gap-3">
-    <div className="text-right">
-      <div className="text-sm font-semibold text-gray-900">{formatCurrency(e.amount)}</div>
-      {iPaid ? (
-        <div className="text-xs text-green-600">你付款</div>
-      ) : myAmount > 0 ? (
-        <div className="text-xs text-red-500">你欠 {formatCurrency(myAmount)}</div>
-      ) : null}
-    </div>
-    <DeleteExpense expenseId={e.id} expenseTitle={e.title} />
-  </div>
-</div>
-
+                return (
+                  <div key={e.id} className="flex items-center justify-between p-4">
+                    <div>
+                      <div className="font-medium text-sm text-gray-900">{e.title}</div>
+                      <div className="text-xs text-gray-400 mt-0.5">
+                        {e.paidBy.name} 付款 · {new Date(e.date).toLocaleDateString('zh-TW')}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="text-right">
+                        <div className="text-sm font-semibold text-gray-900">{formatCurrency(e.amount)}</div>
+                        {iPaid ? (
+                          <div className="text-xs text-green-600">你付款</div>
+                        ) : myAmount > 0 ? (
+                          <div className="text-xs text-red-500">你欠 {formatCurrency(myAmount)}</div>
+                        ) : null}
+                      </div>
+                      <Link
+                        href={`/groups/${group.id}/expenses/${e.id}/edit`}
+                        className="text-xs text-gray-300 hover:text-blue-400 transition-colors"
+                        title="編輯支出"
+                      >
+                        ✏️
+                      </Link>
+                      <DeleteExpense expenseId={e.id} expenseTitle={e.title} />
+                    </div>
+                  </div>
                 );
               })}
             </div>
           )}
         </div>
 
-        {/* 右欄：群組資訊 */}
         <div className="space-y-4">
-          {/* 統計 */}
           <div className="rounded-xl border border-gray-200 bg-white p-4">
             <h3 className="text-sm font-semibold text-gray-700 mb-3">群組統計</h3>
             <div className="space-y-2">
@@ -135,7 +138,6 @@ export default async function GroupPage({ params }: { params: { id: string } }) 
             </div>
           </div>
 
-          {/* 成員列表 + 邀請 */}
           <div className="rounded-xl border border-gray-200 bg-white p-4">
             <h3 className="text-sm font-semibold text-gray-700 mb-3">群組成員</h3>
             <div className="space-y-2 mb-4">
