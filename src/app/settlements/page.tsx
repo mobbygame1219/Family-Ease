@@ -31,8 +31,6 @@ export default function SettlementsPage() {
       });
   }, []);
 
-const [customAmounts, setCustomAmounts] = useState<Record<string, string>>({});
-
 const handleSettle = async (debt: Debt) => {
   const key = `${debt.fromId}-${debt.toId}-${debt.groupId}`;
   const inputAmount = parseFloat(customAmounts[key] || String(debt.amount));
