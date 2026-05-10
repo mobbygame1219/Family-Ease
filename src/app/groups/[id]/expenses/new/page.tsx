@@ -162,7 +162,8 @@ export default function NewExpensePage() {
       return;
     }
 
-    router.push(`/groups/${groupId}`);
+router.push(`/groups/${groupId}`);
+router.refresh();
   };
 
   return (
