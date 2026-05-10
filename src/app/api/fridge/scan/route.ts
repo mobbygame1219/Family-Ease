@@ -14,29 +14,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: '請提供圖片' }, { status: 400 });
   }
 
-  const prompt = `
-你是一個收據辨識助手，專門辨識台灣超市和賣場的購物收據。
-
-請從這張收據圖片中，辨識所有購買的食材和食品，並以 JSON 格式回傳。
-
-規則：
-1. 只擷取食材和食品類商品（不包括清潔用品、日用品等）
-2. 盡量辨識數量和單位（個/顆/包/袋/瓶/罐/克/公斤等）
-3. 如果無法辨識數量，預設為 1
-4. 如果無法辨識單位，根據食材特性猜測（雞蛋→顆、牛奶→瓶、蔬菜→把等）
-5. 回傳的 JSON 格式如下，不要包含任何其他文字：
-
-{
-  "items": [
-    {
-      "name": "食材名稱",
-      "quantity": 數量（數字）,
-      "unit": "單位",
-      "price": 價格（數字，如果看得到的話）
-    }
-  ]
-}
-`;
+  const prompt = `你是收據辨識助手。請從這張收據圖片辨識所有食材和食品，回傳純 JSON，不要有任何說明文字或 markdown。格式如下：
+{"items":[{"name":"食材名稱","quantity":數量,"unit":"單位","price":價格}]}
+只包含食材和食品，不包含清潔用品。如果看不到價格就不要包含 price 欄位。`;
 
   try {
     const response = await fetch(
@@ -66,18 +46,32 @@ export async function POST(request: Request) {
       }
     );
 
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error('Gemini HTTP error:', response.status, errText);
+      return NextResponse.json({ error: `API 錯誤：${response.status}` }, { status: 500 });
+    }
+
     const data = await response.json();
+    console.log('Gemini response:', JSON.stringify(data).slice(0, 500));
+
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+    console.log('Gemini text:', text);
 
-// 嘗試從回傳文字中找到 JSON 部分
-const jsonMatch = text.match(/\{[\s\S]*\}/);
-if (!jsonMatch) {
-  console.error('No JSON found in response:', text);
-  return NextResponse.json({ error: '辨識失敗，請重試' }, { status: 500 });
-}
-const parsed = JSON.parse(jsonMatch[0]);
+    if (!text) {
+      return NextResponse.json({ error: '辨識結果為空，請重試' }, { status: 500 });
+    }
 
+    // 嘗試從回傳文字中找到 JSON 部分
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      console.error('No JSON found in:', text);
+      return NextResponse.json({ error: '無法解析辨識結果，請重試' }, { status: 500 });
+    }
+
+    const parsed = JSON.parse(jsonMatch[0]);
     return NextResponse.json(parsed);
+
   } catch (error) {
     console.error('Gemini API error:', error);
     return NextResponse.json({ error: '辨識失敗，請重試或手動輸入' }, { status: 500 });
