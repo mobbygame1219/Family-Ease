@@ -1,4 +1,3 @@
-// src/app/auth/register/page.tsx
 'use client';
 
 import { useState } from 'react';
@@ -25,12 +24,11 @@ export default function RegisterPage() {
 
     if (!res.ok) {
       const data = await res.json();
-      setError(data.error ?? 'Something went wrong');
+      setError(data.error ?? '發生錯誤，請再試一次');
       setLoading(false);
       return;
     }
 
-    // Auto sign-in after registration
     await signIn('credentials', {
       email: form.email,
       password: form.password,
@@ -43,9 +41,9 @@ export default function RegisterPage() {
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <div className="mb-2 text-3xl">💸</div>
-          <h1 className="text-2xl font-bold text-gray-900">Create your account</h1>
-          <p className="mt-1 text-sm text-gray-500">Start splitting expenses with friends</p>
+          <div className="mb-2 text-3xl">🏠</div>
+          <h1 className="text-2xl font-bold text-gray-900">建立帳號</h1>
+          <p className="mt-1 text-sm text-gray-500">開始和家人一起記帳</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -54,19 +52,19 @@ export default function RegisterPage() {
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Full name</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">姓名</label>
             <input
               type="text"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               required
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
-              placeholder="Jane Smith"
+              placeholder="王小明"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">電子郵件</label>
             <input
               type="email"
               value={form.email}
@@ -78,7 +76,7 @@ export default function RegisterPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">密碼</label>
             <input
               type="password"
               value={form.password}
@@ -86,7 +84,7 @@ export default function RegisterPage() {
               required
               minLength={6}
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
-              placeholder="At least 6 characters"
+              placeholder="至少 6 個字元"
             />
           </div>
 
@@ -95,14 +93,14 @@ export default function RegisterPage() {
             disabled={loading}
             className="w-full rounded-lg bg-green-600 py-2.5 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-60 transition-colors"
           >
-            {loading ? 'Creating account…' : 'Create account'}
+            {loading ? '建立中…' : '建立帳號'}
           </button>
         </form>
 
         <p className="mt-6 text-center text-sm text-gray-500">
-          Already have an account?{' '}
+          已經有帳號？{' '}
           <Link href="/auth/login" className="font-medium text-green-600 hover:underline">
-            Sign in
+            登入
           </Link>
         </p>
       </div>

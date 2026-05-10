@@ -1,4 +1,3 @@
-// src/app/auth/login/page.tsx
 'use client';
 
 import { useState } from 'react';
@@ -25,7 +24,7 @@ export default function LoginPage() {
     });
 
     if (result?.error) {
-      setError('Invalid email or password');
+      setError('電子郵件或密碼錯誤');
       setLoading(false);
     } else {
       router.push('/dashboard');
@@ -36,9 +35,9 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <div className="mb-2 text-3xl">💸</div>
-          <h1 className="text-2xl font-bold text-gray-900">Welcome back</h1>
-          <p className="mt-1 text-sm text-gray-500">Sign in to your SplitEase account</p>
+          <div className="mb-2 text-3xl">🏠</div>
+          <h1 className="text-2xl font-bold text-gray-900">歡迎回來</h1>
+          <p className="mt-1 text-sm text-gray-500">登入你的 FamilyEase 帳號</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -49,7 +48,7 @@ export default function LoginPage() {
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">電子郵件</label>
             <input
               type="email"
               value={email}
@@ -61,7 +60,7 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">密碼</label>
             <input
               type="password"
               value={password}
@@ -77,14 +76,14 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full rounded-lg bg-green-600 py-2.5 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-60 transition-colors"
           >
-            {loading ? 'Signing in…' : 'Sign in'}
+            {loading ? '登入中…' : '登入'}
           </button>
         </form>
 
         <p className="mt-6 text-center text-sm text-gray-500">
-          Don&apos;t have an account?{' '}
+          還沒有帳號？{' '}
           <Link href="/auth/register" className="font-medium text-green-600 hover:underline">
-            Sign up
+            免費註冊
           </Link>
         </p>
       </div>

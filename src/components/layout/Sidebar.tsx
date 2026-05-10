@@ -1,4 +1,3 @@
-// src/components/layout/Sidebar.tsx
 'use client';
 
 import Link from 'next/link';
@@ -24,10 +23,10 @@ interface SidebarProps {
 }
 
 const navItems = [
-  { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { href: '/groups', icon: Users, label: 'Groups' },
-  { href: '/expenses', icon: Receipt, label: 'Expenses' },
-  { href: '/settlements', icon: ArrowLeftRight, label: 'Settlements' },
+  { href: '/dashboard', icon: LayoutDashboard, label: '總覽' },
+  { href: '/groups', icon: Users, label: '群組' },
+  { href: '/expenses', icon: Receipt, label: '支出' },
+  { href: '/settlements', icon: ArrowLeftRight, label: '結清帳款' },
 ];
 
 export default function Sidebar({ user }: SidebarProps) {
@@ -35,13 +34,11 @@ export default function Sidebar({ user }: SidebarProps) {
 
   return (
     <aside className="flex w-60 flex-col border-r border-gray-200 bg-white">
-      {/* Logo */}
       <div className="flex h-16 items-center gap-2 border-b border-gray-100 px-5">
-        <span className="text-xl">💸</span>
-        <span className="font-bold text-gray-900 text-lg">SplitEase</span>
+        <span className="text-xl">🏠</span>
+        <span className="font-bold text-gray-900 text-lg">FamilyEase</span>
       </div>
 
-      {/* Nav */}
       <nav className="flex-1 space-y-1 p-3">
         {navItems.map(({ href, icon: Icon, label }) => {
           const active = pathname === href || pathname.startsWith(href + '/');
@@ -63,7 +60,6 @@ export default function Sidebar({ user }: SidebarProps) {
         })}
       </nav>
 
-      {/* User section */}
       <div className="border-t border-gray-100 p-3">
         <Link
           href="/profile"
@@ -82,7 +78,7 @@ export default function Sidebar({ user }: SidebarProps) {
           className="mt-1 flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors"
         >
           <LogOut className="h-4 w-4" />
-          Sign out
+          登出
         </button>
       </div>
     </aside>
