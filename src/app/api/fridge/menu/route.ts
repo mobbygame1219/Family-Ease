@@ -11,11 +11,15 @@ export async function POST(request: Request) {
 
   const { budget, people, preferences } = await request.json();
 
-  // 取得冰箱現有食材
-  const fridgeItems = await prisma.fridgeItem.findMany({
-    where: { userId: session.user.id, used: false },
-    select: { name: true, quantity: true, unit: true },
-  });
+// 取得家庭 ID
+const membership = await prisma.familyMember.findFirst({
+  where: { userId: session.user.id },
+});
+
+const fridgeItems = await prisma.fridgeItem.findMany({
+  where: { familyId: membership?.familyId, used: false },
+  select: { name: true, quantity: true, unit: true },
+});
 
   const itemsList = fridgeItems.length > 0
     ? fridgeItems.map((i) => `${i.name} ${i.quantity}${i.unit}`).join('、')
