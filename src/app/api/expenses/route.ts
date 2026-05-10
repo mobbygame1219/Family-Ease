@@ -82,12 +82,23 @@ export async function POST(request: Request) {
       },
     });
 
-    // 記錄活動
+// 記錄活動
+const sevenDaysAgo = new Date();
+sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
 await prisma.activity.create({
   data: {
     type: 'EXPENSE_ADDED',
     message: `新增了支出「${expense.title}」$${expense.amount}`,
     userId: session.user.id,
+    groupId: data.groupId,
+  },
+});
+
+// 自動清理超過 7 天的動態
+await prisma.activity.deleteMany({
+  where: {
+    createdAt: { lt: sevenDaysAgo },
     groupId: data.groupId,
   },
 });
