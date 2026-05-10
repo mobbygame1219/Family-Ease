@@ -69,9 +69,13 @@ export async function POST(request: Request) {
     const data = await response.json();
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
 
-    // 清理並解析 JSON
-    const cleaned = text.replace(/```json|```/g, '').trim();
-    const parsed = JSON.parse(cleaned);
+// 嘗試從回傳文字中找到 JSON 部分
+const jsonMatch = text.match(/\{[\s\S]*\}/);
+if (!jsonMatch) {
+  console.error('No JSON found in response:', text);
+  return NextResponse.json({ error: '辨識失敗，請重試' }, { status: 500 });
+}
+const parsed = JSON.parse(jsonMatch[0]);
 
     return NextResponse.json(parsed);
   } catch (error) {
