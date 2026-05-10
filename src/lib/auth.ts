@@ -5,7 +5,10 @@ import bcrypt from 'bcryptjs';
 
 export const authOptions: NextAuthOptions = {
   secret: process.env.AUTH_SECRET,
-  session: { strategy: 'jwt' },
+  session: {
+  strategy: 'jwt',
+  maxAge: 365 * 24 * 60 * 60, // 1 年
+},
   pages: {
     signIn: '/auth/login',
   },
