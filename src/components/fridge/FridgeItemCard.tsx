@@ -11,7 +11,13 @@ interface FridgeItem {
   expiresAt: Date | null;
 }
 
-export default function FridgeItemCard({ item }: { item: FridgeItem }) {
+export default function FridgeItemCard({
+  item,
+  addedByName,
+}: {
+  item: FridgeItem;
+  addedByName: string;
+}) {
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
 
@@ -31,7 +37,6 @@ export default function FridgeItemCard({ item }: { item: FridgeItem }) {
 
   const isExpiringSoon = item.expiresAt &&
     new Date(item.expiresAt).getTime() - Date.now() < 3 * 24 * 60 * 60 * 1000;
-
   const isExpired = item.expiresAt && new Date(item.expiresAt) < new Date();
 
   return (
@@ -40,13 +45,14 @@ export default function FridgeItemCard({ item }: { item: FridgeItem }) {
       isExpiringSoon ? 'border-orange-200 bg-orange-50' :
       'border-gray-200'
     }`}>
-      <div className="flex items-start justify-between mb-3">
+      <div className="flex items-start justify-between mb-2">
         <div>
           <div className="font-semibold text-gray-900">{item.name}</div>
           <div className="text-sm text-gray-500 mt-0.5">
             {item.quantity} {item.unit}
             {item.price && <span className="ml-2 text-gray-400">${item.price}</span>}
           </div>
+          <div className="text-xs text-gray-400 mt-0.5">由 {addedByName} 新增</div>
         </div>
         <button
           onClick={handleDelete}

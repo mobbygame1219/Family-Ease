@@ -3,7 +3,6 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
-// 標記用完
 export async function PATCH(
   request: Request,
   { params }: { params: { id: string } }
@@ -21,7 +20,6 @@ export async function PATCH(
   return NextResponse.json(item);
 }
 
-// 刪除食材
 export async function DELETE(
   request: Request,
   { params }: { params: { id: string } }

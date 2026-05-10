@@ -24,7 +24,8 @@ model User {
   sentSettlements     Settlement[] @relation("Payer")
   receivedSettlements Settlement[] @relation("Receiver")
   activities    Activity[]
-  fridgeItems FridgeItem[]
+fridgeItems  FridgeItem[]  @relation
+familyMembers FamilyMember[]
 }
 
 model Group {
@@ -152,16 +153,43 @@ enum ActivityType {
   MEMBER_JOINED
 }
 model FridgeItem {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   name      String
   quantity  Float
   unit      String
   price     Float?
   expiresAt DateTime?
-  used      Boolean  @default(false)
+  used      Boolean   @default(false)
   usedAt    DateTime?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  addedById  String
+  familyId   String
+
+  addedBy    User        @relation(fields: [addedById], references: [id], onDelete: Cascade)
+  family     FamilyGroup @relation(fields: [familyId], references: [id], onDelete: Cascade)
+}
+
+model FamilyGroup {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  createdById String
+
+  members     FamilyMember[]
+  fridgeItems FridgeItem[]
+}
+
+model FamilyMember {
+  id       String   @id @default(cuid())
+  role     MemberRole @default(MEMBER)
+  joinedAt DateTime @default(now())
+
+  userId   String
+  familyId String
+
+  user   User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  family FamilyGroup @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, familyId])
 }
