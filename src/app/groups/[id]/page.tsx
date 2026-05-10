@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { formatCurrency } from '@/utils/balance';
+import InviteMember from '@/components/groups/InviteMember';
 
 export default async function GroupPage({ params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
@@ -130,10 +131,10 @@ export default async function GroupPage({ params }: { params: { id: string } }) 
             </div>
           </div>
 
-          {/* 成員列表 */}
+          {/* 成員列表 + 邀請 */}
           <div className="rounded-xl border border-gray-200 bg-white p-4">
             <h3 className="text-sm font-semibold text-gray-700 mb-3">群組成員</h3>
-            <div className="space-y-2">
+            <div className="space-y-2 mb-4">
               {group.members.map((m) => (
                 <div key={m.id} className="flex items-center gap-2">
                   <div className="flex h-7 w-7 items-center justify-center rounded-full bg-green-100 text-xs font-semibold text-green-700">
@@ -151,6 +152,7 @@ export default async function GroupPage({ params }: { params: { id: string } }) 
                 </div>
               ))}
             </div>
+            <InviteMember groupId={group.id} />
           </div>
         </div>
       </div>
