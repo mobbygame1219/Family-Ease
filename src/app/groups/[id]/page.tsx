@@ -1,3 +1,4 @@
+import GroupManage from '@/components/groups/GroupManage';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
@@ -159,6 +160,12 @@ export default async function GroupPage({ params }: { params: { id: string } }) 
               ))}
             </div>
             <InviteMember groupId={group.id} />
+            <GroupManage
+  groupId={group.id}
+  members={group.members}
+  currentUserId={session!.user.id}
+  isCreator={group.createdById === session!.user.id}
+/>
           </div>
         </div>
       </div>
