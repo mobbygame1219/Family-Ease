@@ -14,9 +14,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: '請提供圖片' }, { status: 400 });
   }
 
-  const prompt = `你是收據辨識助手。請從這張收據圖片辨識所有食材和食品，回傳純 JSON，不要有任何說明文字或 markdown。格式如下：
-{"items":[{"name":"食材名稱","quantity":數量,"unit":"單位","price":價格}]}
-只包含食材和食品，不包含清潔用品。如果看不到價格就不要包含 price 欄位。`;
+  const prompt = `請辨識這張收據圖片中的食材和食品。
+對於每個食材，提供：名稱、數量（數字）、單位（個/顆/包/袋/瓶/罐/克/公斤/把）、價格（如果看得到）。
+只包含食材和食品，不要包含清潔用品或日用品。
+用繁體中文回答食材名稱。`;
 
   try {
     const response = await fetch(
@@ -41,6 +42,26 @@ export async function POST(request: Request) {
           generationConfig: {
             temperature: 0.1,
             maxOutputTokens: 2000,
+            responseMimeType: 'application/json',
+            responseSchema: {
+              type: 'object',
+              properties: {
+                items: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      name: { type: 'string' },
+                      quantity: { type: 'number' },
+                      unit: { type: 'string' },
+                      price: { type: 'number' },
+                    },
+                    required: ['name', 'quantity', 'unit'],
+                  },
+                },
+              },
+              required: ['items'],
+            },
           },
         }),
       }
@@ -53,23 +74,14 @@ export async function POST(request: Request) {
     }
 
     const data = await response.json();
-    console.log('Gemini response:', JSON.stringify(data).slice(0, 500));
-
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
-    console.log('Gemini text:', text);
+    console.log('Gemini text:', text.slice(0, 300));
 
     if (!text) {
       return NextResponse.json({ error: '辨識結果為空，請重試' }, { status: 500 });
     }
 
-    // 嘗試從回傳文字中找到 JSON 部分
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      console.error('No JSON found in:', text);
-      return NextResponse.json({ error: '無法解析辨識結果，請重試' }, { status: 500 });
-    }
-
-    const parsed = JSON.parse(jsonMatch[0]);
+    const parsed = JSON.parse(text);
     return NextResponse.json(parsed);
 
   } catch (error) {
