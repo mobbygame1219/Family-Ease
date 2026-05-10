@@ -1,6 +1,16 @@
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { redirect } from 'next/navigation';
 import Link from 'next/link';
 
-export default function HomePage() {
+export default async function HomePage() {
+  const session = await getServerSession(authOptions);
+
+  // 已登入就直接跳到 Dashboard
+  if (session?.user) {
+    redirect('/dashboard');
+  }
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-white px-4">
       <div className="max-w-2xl text-center">
