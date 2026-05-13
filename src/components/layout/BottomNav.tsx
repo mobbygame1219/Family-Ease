@@ -2,21 +2,21 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Receipt, Users, LogOut } from 'lucide-react';
+import { LayoutDashboard, Receipt, Refrigerator, LogOut } from 'lucide-react';
 import { signOut } from 'next-auth/react';
-import { cn } from '@/utils/cn';
+import { cn } from '@/lib/utils';
 
 const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: '首頁' },
   { href: '/splitease', icon: Receipt, label: 'SplitEase' },
-  { href: '/fridge', icon: Users, label: 'Fridge' },
+  { href: '/fridge', icon: Refrigerator, label: 'Fridge' },
 ];
 
 export default function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 safe-area-pb">
+    <div className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t safe-area-pb">
       <div className="flex items-center justify-around h-16">
         {navItems.map(({ href, icon: Icon, label }) => {
           const active = pathname === href || pathname.startsWith(href + '/');
@@ -25,8 +25,8 @@ export default function BottomNav() {
               key={href}
               href={href}
               className={cn(
-                'flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors',
-                active ? 'text-green-600' : 'text-gray-400'
+                'flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors min-w-0',
+                active ? 'text-primary' : 'text-muted-foreground'
               )}
             >
               <Icon className="h-5 w-5" />
@@ -37,7 +37,7 @@ export default function BottomNav() {
 
         <button
           onClick={() => signOut({ callbackUrl: '/' })}
-          className="flex flex-col items-center gap-1 px-4 py-2 rounded-lg text-gray-400"
+          className="flex flex-col items-center gap-1 px-4 py-2 rounded-lg text-muted-foreground hover:text-foreground transition-colors"
         >
           <LogOut className="h-5 w-5" />
           <span className="text-xs font-medium">登出</span>

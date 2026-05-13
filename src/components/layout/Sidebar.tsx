@@ -3,15 +3,11 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
-import { cn } from '@/utils/cn';
-import {
-  LayoutDashboard,
-  Users,
-  Receipt,
-  ArrowLeftRight,
-  LogOut,
-  User,
-} from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { LayoutDashboard, Refrigerator, Receipt, LogOut, User } from 'lucide-react';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
 
 interface SidebarProps {
   user: {
@@ -25,20 +21,25 @@ interface SidebarProps {
 const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: '家庭首頁' },
   { href: '/splitease', icon: Receipt, label: 'SplitEase' },
-  { href: '/fridge', icon: Users, label: 'Family Fridge' },
+  { href: '/fridge', icon: Refrigerator, label: 'Family Fridge' },
 ];
 
 export default function Sidebar({ user }: SidebarProps) {
   const pathname = usePathname();
+  const initials = user.name?.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase() ?? '??';
 
   return (
-    <aside className="flex w-60 flex-col border-r border-gray-200 bg-white">
-      <div className="flex h-16 items-center gap-2 border-b border-gray-100 px-5">
-        <span className="text-xl">🏠</span>
-        <span className="font-bold text-gray-900 text-lg">FamilyEase</span>
+    <aside className="flex w-60 flex-col border-r bg-card">
+      <div className="flex h-16 items-center gap-2.5 px-5">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-base">
+          🏠
+        </div>
+        <span className="font-bold text-foreground text-lg">FamilyEase</span>
       </div>
 
-      <nav className="flex-1 space-y-1 p-3">
+      <Separator />
+
+      <nav className="flex-1 space-y-0.5 p-3">
         {navItems.map(({ href, icon: Icon, label }) => {
           const active = pathname === href || pathname.startsWith(href + '/');
           return (
@@ -48,37 +49,39 @@ export default function Sidebar({ user }: SidebarProps) {
               className={cn(
                 'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
                 active
-                  ? 'bg-green-50 text-green-700'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-muted-foreground hover:bg-accent hover:text-foreground'
               )}
             >
-              <Icon className="h-4 w-4" />
+              <Icon className={cn('h-4 w-4', active ? 'text-primary' : '')} />
               {label}
             </Link>
           );
         })}
       </nav>
 
-      <div className="border-t border-gray-100 p-3">
-        <Link
-          href="/profile"
-          className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
-        >
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-green-100 text-green-700">
-            <User className="h-4 w-4" />
-          </div>
+      <div className="p-3 space-y-1">
+        <Separator className="mb-3" />
+        <div className="flex items-center gap-3 rounded-lg px-3 py-2">
+          <Avatar className="h-8 w-8">
+            <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
+              {initials}
+            </AvatarFallback>
+          </Avatar>
           <div className="flex-1 min-w-0">
-            <div className="font-medium text-gray-900 truncate text-xs">{user.name}</div>
-            <div className="text-gray-400 truncate text-xs">{user.email}</div>
+            <div className="font-medium text-foreground truncate text-xs">{user.name}</div>
+            <div className="text-muted-foreground truncate text-xs">{user.email}</div>
           </div>
-        </Link>
-        <button
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() => signOut({ callbackUrl: '/' })}
-          className="mt-1 flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors"
+          className="w-full justify-start text-muted-foreground hover:text-foreground gap-3"
         >
           <LogOut className="h-4 w-4" />
           登出
-        </button>
+        </Button>
       </div>
     </aside>
   );

@@ -1,6 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+import { Trash2, CheckCircle } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 interface FridgeItem {
   id: string;
@@ -35,51 +40,71 @@ export default function FridgeItemCard({
     window.location.reload();
   };
 
-  const isExpiringSoon = item.expiresAt &&
-    new Date(item.expiresAt).getTime() - Date.now() < 3 * 24 * 60 * 60 * 1000;
   const isExpired = item.expiresAt && new Date(item.expiresAt) < new Date();
+  const isExpiringSoon =
+    !isExpired &&
+    item.expiresAt &&
+    new Date(item.expiresAt).getTime() - Date.now() < 3 * 24 * 60 * 60 * 1000;
 
   return (
-    <div className={`rounded-xl border bg-white p-4 transition-all ${
-      isExpired ? 'border-red-200 bg-red-50' :
-      isExpiringSoon ? 'border-orange-200 bg-orange-50' :
-      'border-gray-200'
-    }`}>
-      <div className="flex items-start justify-between mb-2">
-        <div>
-          <div className="font-semibold text-gray-900">{item.name}</div>
-          <div className="text-sm text-gray-500 mt-0.5">
-            {item.quantity} {item.unit}
-            {item.price && <span className="ml-2 text-gray-400">${item.price}</span>}
-          </div>
-          <div className="text-xs text-gray-400 mt-0.5">由 {addedByName} 新增</div>
-        </div>
-        <button
-          onClick={handleDelete}
-          className="text-gray-300 hover:text-red-400 transition-colors text-xs"
-        >
-          🗑️
-        </button>
-      </div>
-
-      {item.expiresAt && (
-        <div className={`text-xs mb-3 ${
-          isExpired ? 'text-red-500' :
-          isExpiringSoon ? 'text-orange-500' :
-          'text-gray-400'
-        }`}>
-          {isExpired ? '⚠️ 已過期：' : isExpiringSoon ? '⏰ 即將到期：' : '📅 到期日：'}
-          {new Date(item.expiresAt).toLocaleDateString('zh-TW')}
-        </div>
+    <Card
+      className={cn(
+        'transition-all',
+        isExpired && 'border-destructive/40 bg-red-50/50',
+        isExpiringSoon && 'border-orange-300/60 bg-orange-50/50'
       )}
+    >
+      <CardContent className="pt-4 pb-4">
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex-1 min-w-0">
+            <div className="font-semibold text-foreground truncate">{item.name}</div>
+            <div className="text-sm text-muted-foreground mt-0.5">
+              {item.quantity} {item.unit}
+              {item.price != null && (
+                <span className="ml-2 text-muted-foreground/70">${item.price}</span>
+              )}
+            </div>
+            <div className="text-xs text-muted-foreground/60 mt-0.5">由 {addedByName} 新增</div>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleDelete}
+            className="h-7 w-7 text-muted-foreground/40 hover:text-destructive -mr-1 -mt-1 shrink-0"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+        </div>
 
-      <button
-        onClick={handleUse}
-        disabled={loading || done}
-        className="w-full rounded-lg bg-blue-50 border border-blue-200 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-100 disabled:opacity-60 transition-colors"
-      >
-        {loading ? '處理中…' : done ? '✓ 已用完' : '標記用完'}
-      </button>
-    </div>
+        {item.expiresAt && (
+          <Badge
+            variant={isExpired ? 'destructive' : isExpiringSoon ? 'warning' : 'secondary'}
+            className="mb-3 text-xs"
+          >
+            {isExpired ? '⚠️ 已過期：' : isExpiringSoon ? '⏰ 即將到期：' : '📅 '}
+            {new Date(item.expiresAt).toLocaleDateString('zh-TW')}
+          </Badge>
+        )}
+
+        <Button
+          onClick={handleUse}
+          disabled={loading || done}
+          variant="secondary"
+          size="sm"
+          className="w-full text-xs gap-1.5"
+        >
+          {done ? (
+            <>
+              <CheckCircle className="h-3.5 w-3.5 text-primary" />
+              已用完
+            </>
+          ) : loading ? (
+            '處理中…'
+          ) : (
+            '標記用完'
+          )}
+        </Button>
+      </CardContent>
+    </Card>
   );
 }
