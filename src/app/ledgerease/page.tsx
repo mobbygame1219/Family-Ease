@@ -95,7 +95,7 @@ export default async function LedgerPage({ searchParams }: PageProps) {
           </div>
         </div>
         <Button asChild className="bg-violet-600 hover:bg-violet-700">
-          <Link href="/ledger/new">
+          <Link href="/ledgerease/new">
             <Plus className="h-4 w-4" />
             新增記帳
           </Link>

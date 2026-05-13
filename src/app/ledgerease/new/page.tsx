@@ -45,7 +45,7 @@ export default function NewTransactionPage() {
         }),
       });
       if (!res.ok) throw new Error('Failed');
-      router.push('/ledger');
+      router.push('/ledgerease');
     } catch {
       setError('儲存失敗，請再試一次');
       setLoading(false);
@@ -56,7 +56,7 @@ export default function NewTransactionPage() {
     <div className="p-6 max-w-lg mx-auto">
       <div className="flex items-center gap-3 mb-6">
         <Button variant="ghost" size="icon" asChild className="h-9 w-9">
-          <Link href="/ledger">
+          <Link href="/ledgerease">
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>

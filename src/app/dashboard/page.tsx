@@ -95,9 +95,9 @@ const features = [
     badge: 'bg-blue-100 text-blue-700',
   },
   {
-    href: '/ledger',
+    href: '/ledgerease',
     icon: '📒',
-    title: '記帳本',
+    title: 'LedgerEase',
     desc: '記錄個人支出、圖表分析、掌握花費',
     gradient: 'from-violet-500 to-purple-600',
     badge: 'bg-violet-100 text-violet-700',

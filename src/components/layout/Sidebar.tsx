@@ -22,7 +22,7 @@ const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: '家庭首頁' },
   { href: '/splitease', icon: Receipt, label: 'SplitEase' },
   { href: '/fridge', icon: Refrigerator, label: 'Family Fridge' },
-  { href: '/ledger', icon: BookOpen, label: '記帳本' },
+  { href: '/ledgerease', icon: BookOpen, label: 'LedgerEase' },
 ];
 
 export default function Sidebar({ user }: SidebarProps) {
