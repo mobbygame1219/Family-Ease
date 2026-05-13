@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, parseISO } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Plus, BookOpen, TrendingDown } from 'lucide-react';
+import { Plus, BookOpen, TrendingDown, Upload } from 'lucide-react';
 import DateRangePicker from '@/components/ledger/DateRangePicker';
 import LedgerCharts from '@/components/ledger/LedgerCharts';
 import TransactionList from '@/components/ledger/TransactionList';
@@ -94,12 +94,20 @@ export default async function LedgerPage({ searchParams }: PageProps) {
             </div>
           </div>
         </div>
-        <Button asChild className="bg-violet-600 hover:bg-violet-700">
-          <Link href="/ledgerease/new">
-            <Plus className="h-4 w-4" />
-            新增記帳
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+          <Button asChild variant="outline">
+            <Link href="/ledgerease/import">
+              <Upload className="h-4 w-4" />
+              匯入載具 CSV
+            </Link>
+          </Button>
+          <Button asChild className="bg-violet-600 hover:bg-violet-700">
+            <Link href="/ledgerease/new">
+              <Plus className="h-4 w-4" />
+              新增記帳
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {/* 日期選擇器 */}
