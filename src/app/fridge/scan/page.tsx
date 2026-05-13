@@ -21,11 +21,13 @@ export default function ScanPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [items, setItems] = useState<ScannedItem[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const loadFile = (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      setError('請上傳圖片檔案（JPG、PNG 等）');
+      return;
+    }
     const reader = new FileReader();
     reader.onload = () => {
       setPreview(reader.result as string);
@@ -33,6 +35,29 @@ export default function ScanPage() {
       setError('');
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) loadFile(file);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setIsDragging(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) loadFile(file);
   };
 
   const handleScan = async () => {
@@ -108,11 +133,23 @@ export default function ScanPage() {
       {/* 上傳區域 */}
       <div
         onClick={() => fileRef.current?.click()}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
         className={`rounded-xl border-2 border-dashed p-8 text-center cursor-pointer transition-colors mb-6 ${
-          preview ? 'border-blue-300 bg-blue-50' : 'border-gray-300 hover:border-blue-300 hover:bg-blue-50'
+          isDragging
+            ? 'border-blue-500 bg-blue-100 scale-[1.01]'
+            : preview
+            ? 'border-blue-300 bg-blue-50'
+            : 'border-gray-300 hover:border-blue-300 hover:bg-blue-50'
         }`}
       >
-        {preview ? (
+        {isDragging ? (
+          <div>
+            <div className="text-4xl mb-3">📂</div>
+            <p className="text-blue-600 font-semibold">放開以上傳圖片</p>
+          </div>
+        ) : preview ? (
           <img
             src={preview}
             alt="收據預覽"
@@ -121,7 +158,7 @@ export default function ScanPage() {
         ) : (
           <div>
             <div className="text-4xl mb-3">📄</div>
-            <p className="text-gray-500 font-medium">點擊上傳收據照片</p>
+            <p className="text-gray-500 font-medium">點擊上傳，或將收據照片拖曳至此</p>
             <p className="text-gray-400 text-sm mt-1">支援 JPG、PNG 格式</p>
           </div>
         )}

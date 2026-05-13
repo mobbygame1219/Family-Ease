@@ -25,10 +25,13 @@ interface MenuResult {
   tips?: string;
 }
 
+const MEAL_OPTIONS = ['早餐', '午餐', '晚餐', '消夜'] as const;
+
 const timeIcon: Record<string, string> = {
   '早餐': '🌅',
   '午餐': '☀️',
   '晚餐': '🌙',
+  '消夜': '🌛',
   '點心': '🍪',
 };
 
@@ -39,6 +42,13 @@ export default function MenuPage() {
     people: '4',
     preferences: '',
   });
+  const [selectedMeals, setSelectedMeals] = useState<string[]>(['早餐', '午餐', '晚餐']);
+
+  const toggleMeal = (meal: string) => {
+    setSelectedMeals((prev) =>
+      prev.includes(meal) ? prev.filter((m) => m !== meal) : [...prev, meal]
+    );
+  };
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [menu, setMenu] = useState<MenuResult | null>(null);
@@ -57,6 +67,7 @@ export default function MenuPage() {
         budget: parseFloat(form.budget),
         people: parseInt(form.people),
         preferences: form.preferences,
+        meals: selectedMeals,
       }),
     });
 
@@ -120,6 +131,35 @@ export default function MenuPage() {
         </div>
 
         <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            設計餐次<span className="text-red-500">*</span>
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {MEAL_OPTIONS.map((meal) => {
+              const active = selectedMeals.includes(meal);
+              return (
+                <button
+                  key={meal}
+                  type="button"
+                  onClick={() => toggleMeal(meal)}
+                  className={`flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${
+                    active
+                      ? 'border-orange-400 bg-orange-100 text-orange-700'
+                      : 'border-gray-200 bg-white text-gray-400 hover:border-gray-300'
+                  }`}
+                >
+                  <span>{timeIcon[meal]}</span>
+                  {meal}
+                </button>
+              );
+            })}
+          </div>
+          {selectedMeals.length === 0 && (
+            <p className="text-xs text-red-500 mt-1">請至少選擇一個餐次</p>
+          )}
+        </div>
+
+        <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-1">
             特別需求（選填）
           </label>
@@ -138,7 +178,7 @@ export default function MenuPage() {
 
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || selectedMeals.length === 0}
           className="w-full rounded-lg bg-orange-500 py-3 text-sm font-semibold text-white hover:bg-orange-600 disabled:opacity-60 transition-colors"
         >
           {loading ? '🤔 AI 正在設計菜單，請稍候…' : '✨ 生成今日菜單'}

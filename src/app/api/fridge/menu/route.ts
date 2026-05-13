@@ -9,7 +9,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { budget, people, preferences } = await request.json();
+  const { budget, people, preferences, meals } = await request.json();
+  const mealList: string[] = Array.isArray(meals) && meals.length > 0
+    ? meals
+    : ['早餐', '午餐', '晚餐'];
 
 // 取得家庭 ID
 const membership = await prisma.familyMember.findFirst({
@@ -30,11 +33,12 @@ const fridgeItems = await prisma.fridgeItem.findMany({
 冰箱現有食材：${itemsList}
 
 請根據以下條件設計今天的菜單：
-- 預算：${budget} 元
+- 預算：${budget} 元（請盡量讓總花費接近或達到此預算，充分利用預算，不要刻意節省）
 - 人數：${people} 人
+- 需設計的餐次：${mealList.join('、')}
 - 備註：${preferences || '無特別要求'}
 
-請設計包含早餐、午餐、晚餐的一日菜單。
+請只設計以上指定的餐次，每個餐次的 time 欄位必須完全對應到餐次名稱（例如「早餐」、「午餐」、「晚餐」、「消夜」）。
 盡量使用冰箱現有食材，不足的食材列出需要額外採購的清單。
 每道菜列出簡單的食材和做法。`;
 
