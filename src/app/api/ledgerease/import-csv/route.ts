@@ -69,22 +69,37 @@ export async function POST(request: Request) {
   const csvText = raw.replace(/^﻿/, '');
   const lines = csvText.split(/\r?\n/);
 
-  // ── Parse two-section structure ──────────────────────────────────────────
-  // Section A  : invoice headers  (消費日期 | 賣方名稱 | 發票號碼 | …)
-  // Section B  : item details     (發票號碼 | 品名 | 數量 | 單價 | 小計 | …)
+  // ── Parse CSV — supports two formats ─────────────────────────────────────
+  //
+  // Format A  "flat"   : one row per item, 賣方名稱 column in the same row
+  //   header: 消費日期, 賣方名稱, 品名, 數量, 單價, 小計, …
+  //   rows  : each row is one purchased item
+  //
+  // Format B  "two-section" (legacy fallback)
+  //   Section 1 header: 消費日期, 賣方名稱, 發票號碼, … (invoice summary)
+  //   Section 2 header: 發票號碼, 品名, 數量, 單價, 小計 (item details)
 
   const invoiceMap: Record<string, { date: string; storeName: string }> = {};
   const items: ParsedItem[] = [];
 
-  type Mode = 'searching' | 'invoice' | 'item';
+  type Mode = 'searching' | 'flat' | 'invoice' | 'item';
   let mode: Mode = 'searching';
 
-  let invDateCol = 1;   // defaults based on typical column order
+  // flat-mode indices
+  let flatDateCol  = -1;
+  let flatStoreCol = -1;
+  let flatItemCol  = -1;
+  let flatTotalCol = -1;
+
+  // two-section invoice indices
+  let invDateCol  = 1;
   let invStoreCol = 4;
-  let invNumCol = 5;
+  let invNumCol   = 5;
+
+  // two-section item indices
   let itemInvNumCol = 0;
-  let itemNameCol = 1;
-  let itemTotalCol = 4;
+  let itemNameCol   = 1;
+  let itemTotalCol  = 4;
 
   for (const rawLine of lines) {
     const line = rawLine.trim();
@@ -92,52 +107,72 @@ export async function POST(request: Request) {
 
     const cols = parseCsvLine(line);
 
-    // ── Detect invoice-header row ────────────────────────────────────────
-    const hasDateCol  = cols.some((c) => c.includes('消費日期'));
-    const hasStoreCol = cols.some((c) => c.includes('賣方名稱') || c.includes('賣方'));
-    const hasInvCol   = cols.some((c) => c.includes('發票號碼'));
+    const hasDateCol   = cols.some((c) => c.includes('消費日期'));
+    const hasStoreCol  = cols.some((c) => c.includes('賣方名稱'));
+    const hasItemName  = cols.some((c) => c === '品名' || c.includes('品名'));
+    const hasAmountCol = cols.some((c) => c.includes('小計') || c.includes('單價'));
 
+    // ── Priority 1: flat header — 賣方名稱 AND 品名 in the same header ───
+    if (hasStoreCol && hasItemName) {
+      mode = 'flat';
+      flatDateCol  = cols.findIndex((c) => c.includes('消費日期'));
+      flatStoreCol = cols.findIndex((c) => c.includes('賣方名稱'));
+      flatItemCol  = cols.findIndex((c) => c === '品名' || c.includes('品名'));
+      // Use the last 小計 column as the item amount
+      const subIdxs = cols.reduce((acc: number[], c, i) =>
+        c.includes('小計') ? [...acc, i] : acc, []);
+      flatTotalCol = subIdxs[subIdxs.length - 1] ?? cols.length - 1;
+      continue;
+    }
+
+    // ── Priority 2: two-section invoice header ───────────────────────────
     if (hasDateCol && hasStoreCol) {
       mode = 'invoice';
       invDateCol  = cols.findIndex((c) => c.includes('消費日期'));
       invStoreCol = cols.findIndex((c) => c.includes('賣方名稱') || c.includes('賣方'));
       invNumCol   = cols.findIndex((c) => c.includes('發票號碼'));
-      if (invDateCol < 0) invDateCol = 1;
+      if (invDateCol  < 0) invDateCol  = 1;
       if (invStoreCol < 0) invStoreCol = 4;
-      if (invNumCol < 0) invNumCol = 5;
+      if (invNumCol   < 0) invNumCol   = 5;
       continue;
     }
 
-    // ── Detect item-detail header row ────────────────────────────────────
-    const hasItemName = cols.some((c) => c === '品名' || c.includes('品名'));
-    const hasUnitPrice = cols.some((c) => c.includes('單價') || c.includes('小計'));
-
-    if (hasItemName && hasUnitPrice) {
+    // ── Priority 3: two-section item-detail header ───────────────────────
+    if (hasItemName && hasAmountCol) {
       mode = 'item';
       itemInvNumCol = cols.findIndex((c) => c.includes('發票號碼'));
       itemNameCol   = cols.findIndex((c) => c === '品名' || c.includes('品名'));
-      // Use the LAST 小計 column (individual item subtotal, not invoice total)
-      const subtotalIndices = cols.reduce((acc: number[], c, i) =>
+      const subIdxs = cols.reduce((acc: number[], c, i) =>
         c.includes('小計') ? [...acc, i] : acc, []);
-      itemTotalCol = subtotalIndices[subtotalIndices.length - 1] ?? cols.length - 2;
+      itemTotalCol = subIdxs[subIdxs.length - 1] ?? cols.length - 2;
       if (itemInvNumCol < 0) itemInvNumCol = 0;
-      if (itemNameCol < 0) itemNameCol = 1;
+      if (itemNameCol   < 0) itemNameCol   = 1;
       continue;
     }
 
     // ── Accumulate data rows ─────────────────────────────────────────────
-    if (mode === 'invoice') {
-      const invNum = (cols[invNumCol] ?? '').replace(/-/g, '').trim();
-      const dateRaw = cols[invDateCol] ?? '';
+    if (mode === 'flat') {
+      // Each row = one item; 賣方名稱 is in the same row
+      const description = (cols[flatItemCol]  ?? '').trim();
+      const storeName   = (cols[flatStoreCol] ?? '').trim() || '未知店家';
+      const dateRaw     = cols[flatDateCol] ?? '';
+      const amountStr   = (cols[flatTotalCol] ?? '0').replace(/,/g, '');
+      const amount      = parseFloat(amountStr) || 0;
+
+      if (!description || amount <= 0) continue;
+      items.push({ date: rocToISO(dateRaw), storeName, description, amount });
+
+    } else if (mode === 'invoice') {
+      const invNum    = (cols[invNumCol]  ?? '').replace(/-/g, '').trim();
+      const dateRaw   =  cols[invDateCol] ?? '';
       const storeName = (cols[invStoreCol] ?? '').trim() || '未知店家';
-      if (invNum) {
-        invoiceMap[invNum] = { date: rocToISO(dateRaw), storeName };
-      }
+      if (invNum) invoiceMap[invNum] = { date: rocToISO(dateRaw), storeName };
+
     } else if (mode === 'item') {
-      const invNumRaw = (cols[itemInvNumCol] ?? '').replace(/-/g, '').trim();
-      const description = (cols[itemNameCol] ?? '').trim();
-      const amountStr  = (cols[itemTotalCol] ?? '0').replace(/,/g, '');
-      const amount = parseFloat(amountStr) || 0;
+      const invNumRaw   = (cols[itemInvNumCol] ?? '').replace(/-/g, '').trim();
+      const description = (cols[itemNameCol]   ?? '').trim();
+      const amountStr   = (cols[itemTotalCol]  ?? '0').replace(/,/g, '');
+      const amount      = parseFloat(amountStr) || 0;
 
       if (!description || amount <= 0) continue;
 
