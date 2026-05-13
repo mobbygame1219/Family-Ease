@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, Refrigerator, Receipt, LogOut, User } from 'lucide-react';
+import { LayoutDashboard, Refrigerator, Receipt, LogOut, BookOpen } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -22,6 +22,7 @@ const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: '家庭首頁' },
   { href: '/splitease', icon: Receipt, label: 'SplitEase' },
   { href: '/fridge', icon: Refrigerator, label: 'Family Fridge' },
+  { href: '/ledger', icon: BookOpen, label: '記帳本' },
 ];
 
 export default function Sidebar({ user }: SidebarProps) {

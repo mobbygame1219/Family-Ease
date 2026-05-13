@@ -24,8 +24,9 @@ model User {
   sentSettlements     Settlement[] @relation("Payer")
   receivedSettlements Settlement[] @relation("Receiver")
   activities    Activity[]
-fridgeItems  FridgeItem[]  @relation
+fridgeItems   FridgeItem[]  @relation
 familyMembers FamilyMember[]
+transactions  Transaction[]
 }
 
 model Group {
@@ -192,4 +193,30 @@ model FamilyMember {
   family FamilyGroup @relation(fields: [familyId], references: [id], onDelete: Cascade)
 
   @@unique([userId, familyId])
+}
+
+enum TransactionCategory {
+  TRANSPORT
+  FOOD
+  MEDICAL
+  ENTERTAINMENT
+  FASHION_BEAUTY
+  HOUSING
+  DAILY
+  OTHER
+  EDUCATION
+  FINANCE
+}
+
+model Transaction {
+  id          String              @id @default(cuid())
+  amount      Float
+  category    TransactionCategory @default(OTHER)
+  description String?
+  date        DateTime            @default(now())
+  source      String?
+  createdAt   DateTime            @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

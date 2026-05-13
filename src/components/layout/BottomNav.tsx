@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Receipt, Refrigerator, LogOut } from 'lucide-react';
+import { LayoutDashboard, Receipt, Refrigerator, BookOpen, LogOut } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import { cn } from '@/lib/utils';
 
@@ -10,6 +10,7 @@ const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: '首頁' },
   { href: '/splitease', icon: Receipt, label: 'SplitEase' },
   { href: '/fridge', icon: Refrigerator, label: 'Fridge' },
+  { href: '/ledger', icon: BookOpen, label: '記帳本' },
 ];
 
 export default function BottomNav() {
