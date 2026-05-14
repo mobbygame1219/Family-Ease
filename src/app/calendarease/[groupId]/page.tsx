@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Plus, ArrowLeft } from 'lucide-react';
 import CalendarGrid from '@/components/calendarease/CalendarGrid';
+import InviteMemberForm from '@/components/calendarease/InviteMemberForm';
 
 interface PageProps {
   params: { groupId: string };
@@ -36,7 +37,7 @@ export default async function GroupCalendarPage({ params, searchParams }: PagePr
     orderBy: { startAt: 'asc' },
   });
 
-  // Serialize events
+  // Serialize events (include isFromPetLog so CalendarGrid can hide edit/delete)
   const serializedEvents = events.map((e) => ({
     id: e.id,
     title: e.title,
@@ -44,10 +45,13 @@ export default async function GroupCalendarPage({ params, searchParams }: PagePr
     startAt: e.startAt.toISOString(),
     endAt: e.endAt.toISOString(),
     isAllDay: e.isAllDay,
+    isFromPetLog: e.isFromPetLog,
     location: e.location ?? null,
     description: e.description ?? null,
     createdBy: { id: e.createdBy.id, name: e.createdBy.name ?? '' },
   }));
+
+  const currentUserRole = group.members.find((m) => m.userId === session.user.id)?.role ?? 'MEMBER';
 
   return (
     <div className="p-4 max-w-5xl mx-auto">
@@ -70,17 +74,23 @@ export default async function GroupCalendarPage({ params, searchParams }: PagePr
         </Button>
       </div>
 
-      {/* Member Avatars */}
-      <div className="flex gap-2 mb-5 flex-wrap">
-        {group.members.map((m) => (
-          <div
-            key={m.id}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-purple-100 text-purple-700 text-sm font-semibold"
-            title={m.user.name ?? ''}
-          >
-            {(m.user.name ?? '?')[0].toUpperCase()}
-          </div>
-        ))}
+      {/* Members + Invite */}
+      <div className="flex items-center gap-3 mb-5 flex-wrap">
+        <div className="flex gap-2 flex-wrap">
+          {group.members.map((m) => (
+            <div
+              key={m.id}
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-purple-100 text-purple-700 text-sm font-semibold"
+              title={`${m.user.name ?? '?'} (${m.role === 'OWNER' ? '管理員' : '成員'})`}
+            >
+              {(m.user.name ?? '?')[0].toUpperCase()}
+            </div>
+          ))}
+        </div>
+        {/* OWNER can invite */}
+        {currentUserRole === 'OWNER' && (
+          <InviteMemberForm groupId={params.groupId} />
+        )}
       </div>
 
       {/* Calendar Grid */}

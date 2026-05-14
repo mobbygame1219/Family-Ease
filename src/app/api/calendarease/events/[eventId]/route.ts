@@ -6,10 +6,10 @@ import { prisma } from '@/lib/prisma';
 async function canModifyEvent(
   eventId: string,
   userId: string
-): Promise<{ allowed: boolean; event?: { id: string; groupId: string; createdById: string } }> {
+): Promise<{ allowed: boolean; event?: { id: string; groupId: string; createdById: string; isFromPetLog: boolean } }> {
   const event = await prisma.calendarEvent.findUnique({
     where: { id: eventId },
-    select: { id: true, groupId: true, createdById: true },
+    select: { id: true, groupId: true, createdById: true, isFromPetLog: true },
   });
 
   if (!event) {
@@ -52,6 +52,10 @@ export async function PUT(
 
     if (!allowed) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    if (event.isFromPetLog) {
+      return NextResponse.json({ error: '寵物記錄行程不能編輯' }, { status: 403 });
     }
 
     const body = await request.json();
@@ -118,6 +122,10 @@ export async function DELETE(
 
     if (!allowed) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    if (event.isFromPetLog) {
+      return NextResponse.json({ error: '寵物記錄行程不能手動刪除' }, { status: 403 });
     }
 
     await prisma.calendarEvent.delete({ where: { id: eventId } });

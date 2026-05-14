@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import { useRouter, useParams, useSearchParams } from 'next/navigation';
+import { useState, useEffect, useCallback } from 'react';
+import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,13 +29,13 @@ const NOTIFICATION_OPTIONS = [
   { label: '1 天前', value: '1440' },
 ];
 
-/** Format a Date to datetime-local value (YYYY-MM-DDTHH:mm) in local time */
+/** Format a Date to datetime-local string (YYYY-MM-DDTHH:mm) */
 function toDatetimeLocal(d: Date): string {
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-/** Return a datetime-local string that is 1 hour after the given one */
+/** Add one hour to a datetime-local string */
 function addOneHour(dt: string): string {
   if (!dt) return '';
   const d = new Date(dt);
@@ -43,44 +43,58 @@ function addOneHour(dt: string): string {
   return toDatetimeLocal(d);
 }
 
-export default function NewEventPage() {
+export default function EditEventPage() {
   const router = useRouter();
-  const params = useParams<{ groupId: string }>();
-  const searchParams = useSearchParams();
+  const { groupId, eventId } = useParams<{ groupId: string; eventId: string }>();
 
-  // Build sensible defaults from ?date= query param
-  const prefillDate = searchParams.get('date') ?? '';
-  const now = new Date();
-  const defaultDate = prefillDate || toDatetimeLocal(now).slice(0, 10);
-
-  // Round now to next half-hour for nicer default
-  const roundedNow = new Date(now);
-  roundedNow.setMinutes(now.getMinutes() < 30 ? 30 : 0, 0, 0);
-  if (now.getMinutes() >= 30) roundedNow.setHours(roundedNow.getHours() + 1);
-
-  const defaultStart = prefillDate
-    ? `${prefillDate}T09:00`
-    : toDatetimeLocal(roundedNow);
-  const defaultEnd = addOneHour(defaultStart);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [notFound, setNotFound] = useState(false);
 
   const [title, setTitle] = useState('');
   const [isAllDay, setIsAllDay] = useState(false);
-  const [startAt, setStartAt] = useState(defaultStart);
-  const [endAt, setEndAt] = useState(defaultEnd);
-  const [startDate, setStartDate] = useState(defaultDate);
+  const [startAt, setStartAt] = useState('');
+  const [endAt, setEndAt] = useState('');
+  const [startDate, setStartDate] = useState('');
   const [location, setLocation] = useState('');
   const [description, setDescription] = useState('');
   const [color, setColor] = useState('#8b5cf6');
   const [notifyBefore, setNotifyBefore] = useState('0');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  // Track whether the user has manually changed the end time
   const [endAtManuallyChanged, setEndAtManuallyChanged] = useState(false);
+
+  // Fetch existing event
+  useEffect(() => {
+    fetch(`/api/calendarease/events?groupId=${groupId}`)
+      .then((r) => r.json())
+      .then((events: { id: string; title: string; isAllDay: boolean; startAt: string; endAt: string; location: string | null; description: string | null; color: string; notifyBefore: number; isFromPetLog: boolean }[]) => {
+        const ev = events.find((e) => e.id === eventId);
+        if (!ev) { setNotFound(true); setLoading(false); return; }
+        if (ev.isFromPetLog) { setNotFound(true); setLoading(false); return; }
+
+        setTitle(ev.title);
+        setIsAllDay(ev.isAllDay);
+        setColor(ev.color);
+        setNotifyBefore(String(ev.notifyBefore));
+        setLocation(ev.location ?? '');
+        setDescription(ev.description ?? '');
+
+        const start = new Date(ev.startAt);
+        const end   = new Date(ev.endAt);
+        if (ev.isAllDay) {
+          setStartDate(ev.startAt.slice(0, 10));
+        } else {
+          setStartAt(toDatetimeLocal(start));
+          setEndAt(toDatetimeLocal(end));
+          setEndAtManuallyChanged(true); // pre-filled end = already "set"
+        }
+        setLoading(false);
+      })
+      .catch(() => { setNotFound(true); setLoading(false); });
+  }, [eventId, groupId]);
 
   const handleStartAtChange = useCallback((value: string) => {
     setStartAt(value);
-    // If end time was never manually touched, keep it = start + 1 h
     if (!endAtManuallyChanged && value) {
       setEndAt(addOneHour(value));
     }
@@ -88,7 +102,7 @@ export default function NewEventPage() {
 
   const handleEndAtChange = useCallback((value: string) => {
     setEndAt(value);
-    setEndAtManuallyChanged(true); // user took control — stop auto-updating
+    setEndAtManuallyChanged(true);
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -104,25 +118,21 @@ export default function NewEventPage() {
       resolvedEnd   = new Date(`${startDate}T23:59:59`).toISOString();
     } else {
       if (!startAt || !endAt) { setError('請選擇開始與結束時間'); return; }
-      if (new Date(endAt) <= new Date(startAt)) {
-        setError('結束時間必須晚於開始時間'); return;
-      }
       resolvedStart = new Date(startAt).toISOString();
       resolvedEnd   = new Date(endAt).toISOString();
     }
 
-    setLoading(true);
+    setSaving(true);
     setError('');
     try {
-      const res = await fetch('/api/calendarease/events', {
-        method: 'POST',
+      const res = await fetch(`/api/calendarease/events/${eventId}`, {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          groupId: params.groupId,
           title: title.trim(),
           isAllDay,
           startAt: resolvedStart,
-          endAt: resolvedEnd,
+          endAt:   resolvedEnd,
           location: location.trim() || undefined,
           description: description.trim() || undefined,
           color,
@@ -130,25 +140,44 @@ export default function NewEventPage() {
         }),
       });
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setError(data.error ?? '新增失敗');
+        const d = await res.json().catch(() => ({}));
+        setError(d.error ?? '儲存失敗');
         return;
       }
-      router.push(`/calendarease/${params.groupId}`);
+      router.push(`/calendarease/${groupId}`);
     } catch {
-      setError('新增失敗，請稍後再試');
+      setError('儲存失敗，請稍後再試');
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="p-6 flex items-center justify-center min-h-[200px]">
+        <div className="h-8 w-8 rounded-full border-4 border-purple-500 border-t-transparent animate-spin" />
+      </div>
+    );
+  }
+
+  if (notFound) {
+    return (
+      <div className="p-6 max-w-lg mx-auto text-center">
+        <p className="text-muted-foreground mb-4">找不到此行程，或此行程不允許編輯。</p>
+        <Link href={`/calendarease/${groupId}`} className="text-purple-600 underline text-sm">
+          返回行事曆
+        </Link>
+      </div>
+    );
   }
 
   return (
     <div className="p-4 max-w-lg mx-auto">
       <div className="flex items-center gap-3 mb-5">
-        <Link href={`/calendarease/${params.groupId}`} className="text-muted-foreground hover:text-foreground">
+        <Link href={`/calendarease/${groupId}`} className="text-muted-foreground hover:text-foreground">
           <ArrowLeft className="h-5 w-5" />
         </Link>
-        <h1 className="text-xl font-bold text-foreground">新增活動</h1>
+        <h1 className="text-xl font-bold text-foreground">編輯活動</h1>
       </div>
 
       <Card>
@@ -180,7 +209,7 @@ export default function NewEventPage() {
               <Label htmlFor="allDay" className="text-sm cursor-pointer">全天活動</Label>
             </div>
 
-            {/* 時間欄位 — 24 小時制 datetime-local */}
+            {/* 時間 */}
             {isAllDay ? (
               <div>
                 <Label htmlFor="startDate" className="text-sm mb-1 block">日期</Label>
@@ -205,12 +234,7 @@ export default function NewEventPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="endAt" className="text-sm mb-1 block">
-                    結束時間
-                    {!endAtManuallyChanged && (
-                      <span className="ml-1 text-xs text-muted-foreground font-normal">（自動）</span>
-                    )}
-                  </Label>
+                  <Label htmlFor="endAt" className="text-sm mb-1 block">結束時間</Label>
                   <Input
                     id="endAt"
                     type="datetime-local"
@@ -287,13 +311,13 @@ export default function NewEventPage() {
             <div className="flex gap-2 pt-1">
               <Button
                 type="submit"
-                disabled={loading}
+                disabled={saving}
                 className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
               >
-                {loading ? '儲存中…' : '儲存活動'}
+                {saving ? '儲存中…' : '儲存變更'}
               </Button>
               <Button type="button" variant="outline" asChild>
-                <Link href={`/calendarease/${params.groupId}`}>取消</Link>
+                <Link href={`/calendarease/${groupId}`}>取消</Link>
               </Button>
             </div>
           </form>

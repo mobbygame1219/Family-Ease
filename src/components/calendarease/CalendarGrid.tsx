@@ -26,6 +26,7 @@ interface CalendarEvent {
   startAt: string;
   endAt: string;
   isAllDay: boolean;
+  isFromPetLog: boolean;
   location?: string | null;
   description?: string | null;
   createdBy: { id: string; name: string };
@@ -254,27 +255,33 @@ export default function CalendarGrid({ year, month, events, groupId }: Props) {
               </div>
             </div>
 
-            <div className="flex gap-2">
-              <Button
-                asChild
-                variant="outline"
-                className="flex-1 border-purple-200 text-purple-600 hover:bg-purple-50"
-              >
-                <a href={`/calendarease/${groupId}/events/${selectedEvent.id}/edit`}>
-                  <Edit2 className="h-4 w-4 mr-1" />
-                  編輯
-                </a>
-              </Button>
-              <Button
-                variant="outline"
-                className="flex-1 border-red-200 text-red-500 hover:bg-red-50"
-                disabled={deleting}
-                onClick={() => handleDelete(selectedEvent.id)}
-              >
-                <Trash2 className="h-4 w-4 mr-1" />
-                {deleting ? '刪除中…' : '刪除'}
-              </Button>
-            </div>
+            {selectedEvent.isFromPetLog ? (
+              <div className="rounded-lg bg-orange-50 border border-orange-200 px-3 py-2 text-xs text-orange-700 text-center">
+                🐾 此為寵物記錄，系統自動建立，無法編輯或刪除
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <Button
+                  asChild
+                  variant="outline"
+                  className="flex-1 border-purple-200 text-purple-600 hover:bg-purple-50"
+                >
+                  <a href={`/calendarease/${groupId}/events/${selectedEvent.id}/edit`}>
+                    <Edit2 className="h-4 w-4 mr-1" />
+                    編輯
+                  </a>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="flex-1 border-red-200 text-red-500 hover:bg-red-50"
+                  disabled={deleting}
+                  onClick={() => handleDelete(selectedEvent.id)}
+                >
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  {deleting ? '刪除中…' : '刪除'}
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       )}

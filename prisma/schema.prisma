@@ -281,6 +281,7 @@ model CalendarEvent {
   isAllDay     Boolean  @default(false)
   color        String   @default("#8b5cf6")
   notifyBefore Int      @default(15)
+  isFromPetLog Boolean  @default(false)
   createdAt    DateTime @default(now())
 
   groupId     String
