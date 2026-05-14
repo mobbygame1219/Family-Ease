@@ -24,9 +24,16 @@ model User {
   sentSettlements     Settlement[] @relation("Payer")
   receivedSettlements Settlement[] @relation("Receiver")
   activities    Activity[]
-fridgeItems   FridgeItem[]  @relation
-familyMembers FamilyMember[]
-transactions  Transaction[]
+  fridgeItems   FridgeItem[]
+  familyMembers FamilyMember[]
+  transactions  Transaction[]
+
+  // CalendarEase
+  calendarGroupsCreated CalendarGroup[]  @relation("CalendarGroupCreator")
+  calendarMemberships   CalendarMember[]
+  calendarEventsCreated CalendarEvent[]  @relation("CalendarEventCreator")
+  petsCreated           Pet[]            @relation("PetCreator")
+  petLogsLogged         PetLog[]         @relation("PetLogLogger")
 }
 
 model Group {
@@ -219,4 +226,95 @@ model Transaction {
 
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ── CalendarEase ─────────────────────────────────────────────────────────────
+
+enum CalendarMemberRole {
+  OWNER
+  MEMBER
+}
+
+enum PetLogType {
+  FEED
+  POOP
+  WATER
+  BATH
+  MEDICINE
+  VET
+  OTHER
+}
+
+model CalendarGroup {
+  id          String   @id @default(cuid())
+  name        String
+  createdAt   DateTime @default(now())
+  createdById String
+
+  createdBy User             @relation("CalendarGroupCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  members   CalendarMember[]
+  events    CalendarEvent[]
+  pets      Pet[]
+}
+
+model CalendarMember {
+  id        String             @id @default(cuid())
+  role      CalendarMemberRole @default(MEMBER)
+  createdAt DateTime           @default(now())
+
+  userId  String
+  groupId String
+
+  user  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group CalendarGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, groupId])
+}
+
+model CalendarEvent {
+  id           String   @id @default(cuid())
+  title        String
+  description  String?
+  location     String?
+  startAt      DateTime
+  endAt        DateTime
+  isAllDay     Boolean  @default(false)
+  color        String   @default("#8b5cf6")
+  notifyBefore Int      @default(15)
+  createdAt    DateTime @default(now())
+
+  groupId     String
+  createdById String
+
+  group     CalendarGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  createdBy User          @relation("CalendarEventCreator", fields: [createdById], references: [id], onDelete: Cascade)
+}
+
+model Pet {
+  id        String    @id @default(cuid())
+  name      String
+  type      String
+  birthday  DateTime?
+  photoUrl  String?
+  createdAt DateTime  @default(now())
+
+  groupId     String
+  createdById String
+
+  group     CalendarGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  createdBy User          @relation("PetCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  logs      PetLog[]
+}
+
+model PetLog {
+  id       String     @id @default(cuid())
+  type     PetLogType @default(FEED)
+  note     String?
+  loggedAt DateTime   @default(now())
+
+  petId       String
+  loggedById  String
+
+  pet      Pet  @relation(fields: [petId], references: [id], onDelete: Cascade)
+  loggedBy User @relation("PetLogLogger", fields: [loggedById], references: [id], onDelete: Cascade)
 }

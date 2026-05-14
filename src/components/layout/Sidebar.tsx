@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, Refrigerator, Receipt, LogOut, BookOpen } from 'lucide-react';
+import { LayoutDashboard, Refrigerator, Receipt, LogOut, BookOpen, CalendarDays } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -23,6 +23,7 @@ const navItems = [
   { href: '/splitease', icon: Receipt, label: 'SplitEase' },
   { href: '/fridge', icon: Refrigerator, label: 'Family Fridge' },
   { href: '/ledgerease', icon: BookOpen, label: 'LedgerEase' },
+  { href: '/calendarease', icon: CalendarDays, label: 'CalendarEase' },
 ];
 
 export default function Sidebar({ user }: SidebarProps) {

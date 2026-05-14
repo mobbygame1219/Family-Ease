@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Receipt, Refrigerator, BookOpen, LogOut } from 'lucide-react';
+import { LayoutDashboard, Receipt, Refrigerator, BookOpen, CalendarDays, LogOut } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import { cn } from '@/lib/utils';
 
@@ -11,6 +11,7 @@ const navItems = [
   { href: '/splitease', icon: Receipt, label: 'SplitEase' },
   { href: '/fridge', icon: Refrigerator, label: 'Fridge' },
   { href: '/ledgerease', icon: BookOpen, label: 'LedgerEase' },
+  { href: '/calendarease', icon: CalendarDays, label: '行事曆' },
 ];
 
 export default function BottomNav() {

@@ -102,6 +102,14 @@ const features = [
     gradient: 'from-violet-500 to-purple-600',
     badge: 'bg-violet-100 text-violet-700',
   },
+  {
+    href: '/calendarease',
+    icon: '📅',
+    title: 'CalendarEase',
+    desc: '家庭行事曆、行程提醒、寵物記錄',
+    gradient: 'from-purple-500 to-indigo-600',
+    badge: 'bg-purple-100 text-purple-700',
+  },
 ];
 
 export default async function DashboardPage() {
