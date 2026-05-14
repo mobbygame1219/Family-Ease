@@ -4,10 +4,14 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, Refrigerator, Receipt, LogOut, BookOpen, CalendarDays } from 'lucide-react';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
+import {
+  LayoutDashboard,
+  Refrigerator,
+  Receipt,
+  LogOut,
+  BookOpen,
+  CalendarDays,
+} from 'lucide-react';
 
 interface SidebarProps {
   user: {
@@ -19,29 +23,37 @@ interface SidebarProps {
 }
 
 const navItems = [
-  { href: '/dashboard', icon: LayoutDashboard, label: '家庭首頁' },
-  { href: '/splitease', icon: Receipt, label: 'SplitEase' },
-  { href: '/fridge', icon: Refrigerator, label: 'Family Fridge' },
-  { href: '/ledgerease', icon: BookOpen, label: 'LedgerEase' },
-  { href: '/calendarease', icon: CalendarDays, label: 'CalendarEase' },
+  { href: '/dashboard',    icon: LayoutDashboard, label: '家庭首頁'     },
+  { href: '/splitease',    icon: Receipt,          label: 'SplitEase'   },
+  { href: '/fridge',       icon: Refrigerator,     label: 'Family Fridge' },
+  { href: '/ledgerease',   icon: BookOpen,          label: 'LedgerEase'  },
+  { href: '/calendarease', icon: CalendarDays,      label: 'CalendarEase' },
 ];
 
 export default function Sidebar({ user }: SidebarProps) {
   const pathname = usePathname();
-  const initials = user.name?.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase() ?? '??';
+  const initials = user.name
+    ?.split(' ')
+    .map((n) => n[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase() ?? '??';
 
   return (
-    <aside className="flex w-60 flex-col border-r bg-card">
-      <div className="flex h-16 items-center gap-2.5 px-5">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-base">
-          🏠
+    <aside className="flex w-56 flex-col bg-white border-r border-neutral-200">
+
+      {/* ── App header ─────────────────────────────── */}
+      <div className="flex h-12 items-center gap-2.5 px-4 border-b border-neutral-200 flex-shrink-0">
+        <div className="flex h-[22px] w-[22px] items-center justify-center rounded-[5px] bg-neutral-900 text-white text-[11px] font-bold select-none">
+          F
         </div>
-        <span className="font-bold text-foreground text-lg">FamilyEase</span>
+        <span className="text-[13px] font-semibold text-neutral-900 tracking-tight">
+          FamilyEase
+        </span>
       </div>
 
-      <Separator />
-
-      <nav className="flex-1 space-y-0.5 p-3">
+      {/* ── Navigation ─────────────────────────────── */}
+      <nav className="flex-1 overflow-y-auto py-2 px-2 space-y-0.5 scrollbar-hide">
         {navItems.map(({ href, icon: Icon, label }) => {
           const active = pathname === href || pathname.startsWith(href + '/');
           return (
@@ -49,42 +61,52 @@ export default function Sidebar({ user }: SidebarProps) {
               key={href}
               href={href}
               className={cn(
-                'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+                'flex items-center gap-2.5 rounded-md px-2.5 py-[7px] text-[13px] transition-colors duration-100 select-none',
                 active
-                  ? 'bg-primary/10 text-primary'
-                  : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                  ? 'bg-neutral-100 text-neutral-900 font-medium'
+                  : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-800 font-normal'
               )}
             >
-              <Icon className={cn('h-4 w-4', active ? 'text-primary' : '')} />
+              <Icon
+                className={cn(
+                  'h-[15px] w-[15px] flex-shrink-0',
+                  active ? 'text-neutral-700' : 'text-neutral-400'
+                )}
+                strokeWidth={active ? 2.2 : 1.8}
+              />
               {label}
             </Link>
           );
         })}
       </nav>
 
-      <div className="p-3 space-y-1">
-        <Separator className="mb-3" />
-        <div className="flex items-center gap-3 rounded-lg px-3 py-2">
-          <Avatar className="h-8 w-8">
-            <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
-              {initials}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex-1 min-w-0">
-            <div className="font-medium text-foreground truncate text-xs">{user.name}</div>
-            <div className="text-muted-foreground truncate text-xs">{user.email}</div>
+      {/* ── User footer ────────────────────────────── */}
+      <div className="flex-shrink-0 border-t border-neutral-200 p-2">
+        <div className="flex items-center gap-2.5 rounded-md px-2.5 py-2 group">
+          {/* Avatar */}
+          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-neutral-100 text-[11px] font-semibold text-neutral-600 flex-shrink-0">
+            {initials}
           </div>
+          {/* Name + email */}
+          <div className="flex-1 min-w-0">
+            <div className="text-[12px] font-medium text-neutral-700 truncate leading-tight">
+              {user.name}
+            </div>
+            <div className="text-[11px] text-neutral-400 truncate leading-tight">
+              {user.email}
+            </div>
+          </div>
+          {/* Sign-out icon */}
+          <button
+            onClick={() => signOut({ callbackUrl: '/' })}
+            title="登出"
+            className="flex-shrink-0 p-1 rounded text-neutral-300 hover:text-neutral-600 hover:bg-neutral-100 transition-colors opacity-0 group-hover:opacity-100"
+          >
+            <LogOut className="h-3.5 w-3.5" />
+          </button>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => signOut({ callbackUrl: '/' })}
-          className="w-full justify-start text-muted-foreground hover:text-foreground gap-3"
-        >
-          <LogOut className="h-4 w-4" />
-          登出
-        </Button>
       </div>
+
     </aside>
   );
 }

@@ -4,26 +4,35 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
-    --primary: 142.1 76.2% 36.3%;
-    --primary-foreground: 355.7 100% 97.3%;
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
-    --destructive: 0 84.2% 60.2%;
+    /* ── Surfaces ─────────────────────────────────── */
+    --background:         0   0%  100%;      /* pure white pages */
+    --foreground:       222  47%    9%;      /* near-black, slight blue tint (Linear) */
+    --card:               0   0%  100%;
+    --card-foreground:  222  47%    9%;
+    --popover:            0   0%  100%;
+    --popover-foreground: 222 47%   9%;
+
+    /* ── Brand (green) ────────────────────────────── */
+    --primary:          142.1 76.2% 36.3%;
+    --primary-foreground: 0   0%  100%;
+
+    /* ── Neutrals ─────────────────────────────────── */
+    --secondary:        220  14%   96%;
+    --secondary-foreground: 222 47% 9%;
+    --muted:            220  14%   96%;
+    --muted-foreground: 220   9%   46%;
+    --accent:           220  14%   96%;
+    --accent-foreground: 222 47%   9%;
+
+    /* ── Feedback ─────────────────────────────────── */
+    --destructive:        0  84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 142.4 71.8% 29.2%;
-    --radius: 0.625rem;
+
+    /* ── Chrome ───────────────────────────────────── */
+    --border:           220  13%   91%;
+    --input:            220  13%   91%;
+    --ring:             142.4 71.8% 29.2%;
+    --radius:           0.5rem;
   }
 
   * {
@@ -31,21 +40,65 @@
     box-sizing: border-box;
   }
 
-  body {
-    @apply bg-background text-foreground;
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 
-  h1, h2, h3, h4 {
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    line-height: 1.6;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
     @apply font-semibold tracking-tight;
+    line-height: 1.3;
+  }
+
+  /* Consistent focus ring */
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  /* Clean selection color */
+  ::selection {
+    @apply bg-primary/15 text-foreground;
   }
 }
 
 @layer utilities {
+  /* Hide scrollbar but keep scroll */
   .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
+  }
+
+  /* Thin custom scrollbar for main content */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 4px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-border;
+  }
+
+  /* Smooth page transition on link navigation */
+  .page-fade {
+    animation: pageFadeIn 0.12s ease-out;
+  }
+  @keyframes pageFadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
   }
 }

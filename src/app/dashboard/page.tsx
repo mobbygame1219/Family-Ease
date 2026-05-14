@@ -5,11 +5,9 @@ import Link from 'next/link';
 import { formatCurrency } from '@/utils/balance';
 import ActivityFeed from '@/components/ActivityFeed';
 import ExpenseChart from '@/components/ExpenseChart';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
-import { TrendingUp, TrendingDown, Minus, ArrowRight } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 
 async function getDashboardData(userId: string) {
   const [groups, recentExpenses] = await Promise.all([
@@ -77,174 +75,188 @@ async function getDashboardData(userId: string) {
   return { groups, recentExpenses, totalOwed, totalOwe, categoryStats, activities };
 }
 
+// ── Feature cards ─────────────────────────────────────────────────────────────
 const features = [
   {
     href: '/splitease',
     icon: '💰',
+    iconBg: 'bg-emerald-50',
     title: 'SplitEase',
     desc: '分帳、記錄支出、結清帳款',
-    gradient: 'from-green-500 to-emerald-600',
-    badge: 'bg-green-100 text-green-700',
   },
   {
     href: '/fridge',
     icon: '🧊',
+    iconBg: 'bg-blue-50',
     title: 'Family Fridge',
     desc: '管理冰箱食材、掃描收據、設計菜單',
-    gradient: 'from-blue-500 to-cyan-600',
-    badge: 'bg-blue-100 text-blue-700',
   },
   {
     href: '/ledgerease',
     icon: '📒',
+    iconBg: 'bg-violet-50',
     title: 'LedgerEase',
     desc: '記錄個人支出、圖表分析、掌握花費',
-    gradient: 'from-violet-500 to-purple-600',
-    badge: 'bg-violet-100 text-violet-700',
   },
   {
     href: '/calendarease',
     icon: '📅',
+    iconBg: 'bg-purple-50',
     title: 'CalendarEase',
     desc: '家庭行事曆、行程提醒、寵物記錄',
-    gradient: 'from-purple-500 to-indigo-600',
-    badge: 'bg-purple-100 text-purple-700',
   },
 ];
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
-  const { groups, recentExpenses, totalOwed, totalOwe, categoryStats, activities } =
+  const { recentExpenses, totalOwed, totalOwe, categoryStats, activities } =
     await getDashboardData(session!.user.id);
 
   const netBalance = totalOwed - totalOwe;
+  const firstName = session!.user.name?.split(' ')[0];
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      {/* 歡迎標題 */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-foreground">
-          嗨，{session!.user.name?.split(' ')[0]} 👋
+    <div className="max-w-4xl mx-auto px-6 py-8 space-y-10">
+
+      {/* ── Welcome ──────────────────────────────────────────────────── */}
+      <div>
+        <h1 className="text-2xl font-semibold text-neutral-900 tracking-tight">
+          嗨，{firstName} 👋
         </h1>
-        <p className="text-muted-foreground text-sm mt-1">歡迎回到 FamilyEase</p>
+        <p className="text-sm text-neutral-500 mt-1">歡迎回到 FamilyEase</p>
       </div>
 
-      {/* 功能模組卡片 */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
-        {features.map((f) => (
-          <Link key={f.href} href={f.href} className="group">
-            <Card className="overflow-hidden border-0 shadow-md hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5">
-              <div className={`h-1.5 bg-gradient-to-r ${f.gradient}`} />
-              <CardContent className="pt-5 pb-5">
-                <div className="flex items-start gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted text-2xl shrink-0">
-                    {f.icon}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-bold text-foreground text-base mb-0.5">{f.title}</div>
-                    <div className="text-sm text-muted-foreground">{f.desc}</div>
-                  </div>
-                  <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground group-hover:translate-x-0.5 transition-all mt-1" />
+      {/* ── Feature modules ──────────────────────────────────────────── */}
+      <section>
+        <h2 className="text-xs font-semibold text-neutral-400 uppercase tracking-widest mb-3">
+          功能模組
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          {features.map((f) => (
+            <Link key={f.href} href={f.href} className="group block">
+              <div className="flex items-start gap-3.5 rounded-xl border border-neutral-200 bg-white px-4 py-3.5 hover:border-neutral-300 hover:shadow-sm transition-all duration-150">
+                <div className={`flex h-9 w-9 items-center justify-center rounded-lg text-[18px] flex-shrink-0 ${f.iconBg}`}>
+                  {f.icon}
                 </div>
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
-      </div>
-
-      {/* SplitEase 快速總覽 */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-foreground">💰 SplitEase 總覽</h2>
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/splitease" className="text-primary">
-              查看更多 →
+                <div className="flex-1 min-w-0 py-0.5">
+                  <div className="text-[13px] font-semibold text-neutral-900 leading-tight">
+                    {f.title}
+                  </div>
+                  <div className="text-[12px] text-neutral-500 mt-0.5 leading-relaxed">
+                    {f.desc}
+                  </div>
+                </div>
+                <ChevronRight className="h-4 w-4 text-neutral-300 flex-shrink-0 mt-1 group-hover:text-neutral-500 transition-colors" />
+              </div>
             </Link>
-          </Button>
+          ))}
+        </div>
+      </section>
+
+      {/* ── SplitEase overview ───────────────────────────────────────── */}
+      <section>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-xs font-semibold text-neutral-400 uppercase tracking-widest">
+            SplitEase 總覽
+          </h2>
+          <Link
+            href="/splitease"
+            className="text-[12px] text-neutral-500 hover:text-neutral-800 transition-colors"
+          >
+            查看全部 →
+          </Link>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
-          <Card>
-            <CardContent className="pt-5 pb-5">
-              <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
-                <TrendingUp className="h-3.5 w-3.5 text-primary" />
-                別人欠你
+        {/* Balance row */}
+        <div className="grid grid-cols-3 gap-2.5 mb-4">
+          {[
+            {
+              label: '別人欠你',
+              value: formatCurrency(totalOwed),
+              color: totalOwed > 0 ? 'text-emerald-600' : 'text-neutral-700',
+            },
+            {
+              label: '你欠別人',
+              value: formatCurrency(totalOwe),
+              color: totalOwe > 0 ? 'text-red-500' : 'text-neutral-700',
+            },
+            {
+              label: '淨餘額',
+              value: `${netBalance >= 0 ? '+' : ''}${formatCurrency(netBalance)}`,
+              color: netBalance >= 0 ? 'text-emerald-600' : 'text-red-500',
+            },
+          ].map((stat) => (
+            <div
+              key={stat.label}
+              className="rounded-xl border border-neutral-200 bg-white px-4 py-3"
+            >
+              <div className="text-[11px] font-medium text-neutral-400 mb-1.5 uppercase tracking-wide">
+                {stat.label}
               </div>
-              <div className="text-2xl font-bold text-primary">{formatCurrency(totalOwed)}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-5 pb-5">
-              <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
-                <TrendingDown className="h-3.5 w-3.5 text-destructive" />
-                你欠別人
+              <div className={`text-lg font-semibold ${stat.color} leading-none`}>
+                {stat.value}
               </div>
-              <div className="text-2xl font-bold text-destructive">{formatCurrency(totalOwe)}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-5 pb-5">
-              <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
-                <Minus className="h-3.5 w-3.5" />
-                淨餘額
-              </div>
-              <div className={`text-2xl font-bold ${netBalance >= 0 ? 'text-primary' : 'text-destructive'}`}>
-                {netBalance >= 0 ? '+' : ''}{formatCurrency(netBalance)}
-              </div>
-            </CardContent>
-          </Card>
+            </div>
+          ))}
         </div>
 
-        {/* 最近支出 */}
+        {/* Recent expenses */}
         {recentExpenses.length > 0 && (
-          <Card>
-            <div className="divide-y divide-border">
-              {recentExpenses.slice(0, 4).map((e) => {
-                const myShare = e.splits[0]?.amount ?? 0;
-                const iPaid = e.paidBy.id === session!.user.id;
-                return (
-                  <div key={e.id} className="flex items-center justify-between px-5 py-3.5">
-                    <div>
-                      <div className="font-medium text-sm text-foreground">{e.title}</div>
-                      <div className="text-xs text-muted-foreground mt-0.5">
-                        {e.group.name} · {e.paidBy.name}
-                      </div>
+          <div className="rounded-xl border border-neutral-200 bg-white divide-y divide-neutral-100 overflow-hidden">
+            {recentExpenses.slice(0, 4).map((e) => {
+              const myShare = e.splits[0]?.amount ?? 0;
+              const iPaid = e.paidBy.id === session!.user.id;
+              return (
+                <div key={e.id} className="flex items-center justify-between px-4 py-3">
+                  <div className="min-w-0">
+                    <div className="text-[13px] font-medium text-neutral-900 truncate">
+                      {e.title}
                     </div>
-                    <div className="text-right">
-                      <div className="text-sm font-semibold text-foreground">{formatCurrency(e.amount)}</div>
-                      {iPaid ? (
-                        <Badge variant="success" className="text-xs mt-0.5">你付款</Badge>
-                      ) : myShare > 0 ? (
-                        <Badge variant="destructive" className="text-xs mt-0.5 bg-red-100 text-red-700 border-0 shadow-none">
-                          欠 {formatCurrency(myShare)}
-                        </Badge>
-                      ) : null}
+                    <div className="text-[11px] text-neutral-400 mt-0.5">
+                      {e.group.name} · {e.paidBy.name}
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          </Card>
+                  <div className="flex items-center gap-2.5 flex-shrink-0 ml-4">
+                    <span className="text-[13px] font-semibold text-neutral-700">
+                      {formatCurrency(e.amount)}
+                    </span>
+                    {iPaid ? (
+                      <Badge className="text-[10px] h-5 px-1.5 bg-emerald-50 text-emerald-700 border-emerald-200 font-medium">
+                        你付款
+                      </Badge>
+                    ) : myShare > 0 ? (
+                      <Badge className="text-[10px] h-5 px-1.5 bg-red-50 text-red-600 border-red-200 font-medium">
+                        欠 {formatCurrency(myShare)}
+                      </Badge>
+                    ) : null}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         )}
-      </div>
+      </section>
 
-      {/* 支出圖表 */}
+      {/* ── Category chart ───────────────────────────────────────────── */}
       {categoryStats.length > 0 && (
-        <div className="mb-8">
-          <h2 className="text-lg font-semibold text-foreground mb-4">支出類別分析</h2>
-          <Card>
-            <CardContent className="pt-5">
-              <ExpenseChart data={categoryStats} />
-            </CardContent>
-          </Card>
-        </div>
+        <section>
+          <h2 className="text-xs font-semibold text-neutral-400 uppercase tracking-widest mb-3">
+            支出類別分析
+          </h2>
+          <div className="rounded-xl border border-neutral-200 bg-white p-5">
+            <ExpenseChart data={categoryStats} />
+          </div>
+        </section>
       )}
 
-      {/* 最近動態 */}
-      <div>
-        <h2 className="text-lg font-semibold text-foreground mb-4">最近動態</h2>
+      {/* ── Activity feed ────────────────────────────────────────────── */}
+      <section>
+        <h2 className="text-xs font-semibold text-neutral-400 uppercase tracking-widest mb-3">
+          最近動態
+        </h2>
         <ActivityFeed activities={activities} />
-      </div>
+      </section>
+
     </div>
   );
 }

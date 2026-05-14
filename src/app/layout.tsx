@@ -1,20 +1,15 @@
-// src/app/layout.tsx
 import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'SplitEase — Split bills, not friendships',
-  description: 'Track shared expenses and split bills with friends and groups.',
+  title: 'FamilyEase — Home management made simple',
+  description: 'Split bills, manage your fridge, track spending, and stay organised as a family.',
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className="min-h-screen bg-gray-50 text-gray-900 antialiased">
+    <html lang="zh-TW" suppressHydrationWarning>
+      <body className="min-h-screen bg-background text-foreground antialiased">
         {children}
       </body>
     </html>
