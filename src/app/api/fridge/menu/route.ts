@@ -9,20 +9,31 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { budget, people, preferences, meals } = await request.json();
+  const { budget, people, preferences, meals, fridgeIds } = await request.json();
   const mealList: string[] = Array.isArray(meals) && meals.length > 0
     ? meals
     : ['早餐', '午餐', '晚餐'];
 
-// 取得家庭 ID
-const membership = await prisma.familyMember.findFirst({
-  where: { userId: session.user.id },
-});
+  // Resolve which fridge IDs to use
+  let resolvedFridgeIds: string[];
+  if (Array.isArray(fridgeIds) && fridgeIds.length > 0) {
+    resolvedFridgeIds = fridgeIds;
+  } else {
+    // Fall back to all fridges in the user's family
+    const membership = await prisma.familyMember.findFirst({
+      where: { userId: session.user.id },
+    });
+    const familyFridges = await prisma.fridge.findMany({
+      where: { familyId: membership?.familyId ?? '' },
+      select: { id: true },
+    });
+    resolvedFridgeIds = familyFridges.map((f: { id: string }) => f.id);
+  }
 
-const fridgeItems = await prisma.fridgeItem.findMany({
-  where: { familyId: membership?.familyId, used: false },
-  select: { name: true, quantity: true, unit: true },
-});
+  const fridgeItems = await prisma.fridgeItem.findMany({
+    where: { fridgeId: { in: resolvedFridgeIds }, used: false },
+    select: { name: true, quantity: true, unit: true },
+  });
 
   const itemsList = fridgeItems.length > 0
     ? fridgeItems.map((i) => `${i.name} ${i.quantity}${i.unit}`).join('、')

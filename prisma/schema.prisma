@@ -25,6 +25,7 @@ model User {
   receivedSettlements Settlement[] @relation("Receiver")
   activities    Activity[]
   fridgeItems   FridgeItem[]
+  fridgesCreated Fridge[]       @relation("FridgeCreator")
   familyMembers FamilyMember[]
   transactions  Transaction[]
 
@@ -160,6 +161,19 @@ enum ActivityType {
   SETTLEMENT
   MEMBER_JOINED
 }
+model Fridge {
+  id          String      @id @default(cuid())
+  name        String
+  emoji       String      @default("🧊")
+  createdAt   DateTime    @default(now())
+  familyId    String
+  createdById String
+
+  family      FamilyGroup @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  createdBy   User        @relation("FridgeCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  items       FridgeItem[]
+}
+
 model FridgeItem {
   id        String    @id @default(cuid())
   name      String
@@ -172,10 +186,10 @@ model FridgeItem {
   createdAt DateTime  @default(now())
 
   addedById  String
-  familyId   String
+  fridgeId   String
 
-  addedBy    User        @relation(fields: [addedById], references: [id], onDelete: Cascade)
-  family     FamilyGroup @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  addedBy    User   @relation(fields: [addedById], references: [id], onDelete: Cascade)
+  fridge     Fridge @relation(fields: [fridgeId], references: [id], onDelete: Cascade)
 }
 
 model FamilyGroup {
@@ -184,8 +198,8 @@ model FamilyGroup {
   createdAt DateTime @default(now())
   createdById String
 
-  members     FamilyMember[]
-  fridgeItems FridgeItem[]
+  members  FamilyMember[]
+  fridges  Fridge[]
 }
 
 model FamilyMember {

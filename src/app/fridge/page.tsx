@@ -1,211 +1,233 @@
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import FridgeItemCard from '@/components/fridge/FridgeItemCard';
-import InviteFamilyMember from '@/components/fridge/InviteFamilyMember';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Camera, Plus, ChefHat, Refrigerator } from 'lucide-react';
+import { Plus, Trash2, ChefHat, ChevronRight, Refrigerator } from 'lucide-react';
 
-async function getFamilyData(userId: string) {
-  let membership = await prisma.familyMember.findFirst({
-    where: { userId },
-    include: {
-      family: {
-        include: {
-          members: {
-            include: { user: { select: { id: true, name: true, email: true } } },
-          },
-        },
-      },
-    },
-  });
-
-  if (!membership) {
-    const user = await prisma.user.findUnique({ where: { id: userId } });
-    const family = await prisma.familyGroup.create({
-      data: {
-        name: `${user?.name}的家庭`,
-        createdById: userId,
-        members: { create: { userId, role: 'ADMIN' } },
-      },
-      include: {
-        members: { include: { user: { select: { id: true, name: true, email: true } } } },
-      },
-    });
-    return { family, familyId: family.id };
-  }
-
-  return { family: membership.family, familyId: membership.familyId };
+interface Fridge {
+  id: string;
+  name: string;
+  emoji: string;
+  createdAt: string;
+  _count: { items: number };
 }
 
-export default async function FridgePage() {
-  const session = await getServerSession(authOptions);
-  const { family, familyId } = await getFamilyData(session!.user.id);
+const FRIDGE_EMOJIS = ['🧊', '❄️', '🥶', '🍱', '🫙', '🥩', '🥦', '🍳'];
 
-  const items = await prisma.fridgeItem.findMany({
-    where: { familyId, used: false },
-    include: { addedBy: { select: { id: true, name: true } } },
-    orderBy: { createdAt: 'desc' },
-  });
+export default function FridgePage() {
+  const router = useRouter();
+  const [fridges, setFridges] = useState<Fridge[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [newEmoji, setNewEmoji] = useState('🧊');
+  const [error, setError] = useState('');
 
-  const usedItems = await prisma.fridgeItem.findMany({
-    where: { familyId, used: true },
-    include: { addedBy: { select: { id: true, name: true } } },
-    orderBy: { usedAt: 'desc' },
-    take: 5,
-  });
+  const fetchFridges = async () => {
+    const res = await fetch('/api/fridge/fridges');
+    if (res.ok) {
+      const data = await res.json();
+      setFridges(data);
+    }
+    setLoading(false);
+  };
 
-  const expiringSoon = items.filter(
-    (i) => i.expiresAt && new Date(i.expiresAt).getTime() - Date.now() < 3 * 24 * 60 * 60 * 1000
-  ).length;
+  useEffect(() => { fetchFridges(); }, []);
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newName.trim()) return;
+    setCreating(true);
+    setError('');
+
+    const res = await fetch('/api/fridge/fridges', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: newName.trim(), emoji: newEmoji }),
+    });
+
+    if (res.ok) {
+      setNewName('');
+      setNewEmoji('🧊');
+      setShowForm(false);
+      await fetchFridges();
+    } else {
+      const data = await res.json();
+      setError(data.error ?? '建立失敗');
+    }
+    setCreating(false);
+  };
+
+  const handleDelete = async (fridge: Fridge) => {
+    if (!confirm(`確定要刪除「${fridge.emoji} ${fridge.name}」？\n冰箱內的所有食材也會一併刪除。`)) return;
+
+    const res = await fetch(`/api/fridge/fridges/${fridge.id}`, { method: 'DELETE' });
+    if (res.ok) {
+      await fetchFridges();
+    } else {
+      const data = await res.json();
+      alert(data.error ?? '刪除失敗');
+    }
+  };
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <div className="max-w-2xl mx-auto px-6 py-8 space-y-8">
+
       {/* Header */}
-      <div className="flex items-start justify-between mb-6">
+      <div className="flex items-center justify-between">
         <div>
-          <div className="flex items-center gap-3 mb-1">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-100 text-2xl">
-              🧊
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">Family Fridge</h1>
-              <p className="text-muted-foreground text-sm">
-                目前有 {items.length} 樣食材
-                {expiringSoon > 0 && (
-                  <Badge variant="warning" className="ml-2 text-xs">
-                    {expiringSoon} 樣即將到期
-                  </Badge>
-                )}
-              </p>
-            </div>
-          </div>
+          <h1 className="text-2xl font-semibold text-neutral-900 tracking-tight">Family Fridge</h1>
+          <p className="text-sm text-neutral-500 mt-0.5">管理家庭冰箱食材</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" asChild>
-            <Link href="/fridge/scan">
-              <Camera className="h-4 w-4" />
-              掃描收據
-            </Link>
-          </Button>
-          <Button size="sm" asChild className="bg-blue-600 hover:bg-blue-700">
-            <Link href="/fridge/new">
-              <Plus className="h-4 w-4" />
-              新增食材
-            </Link>
-          </Button>
-        </div>
+        <button
+          onClick={() => setShowForm((v) => !v)}
+          className="flex items-center gap-1.5 rounded-lg bg-neutral-900 px-3.5 py-2 text-[13px] font-medium text-white hover:bg-neutral-700 transition-colors"
+        >
+          <Plus className="h-3.5 w-3.5" />
+          新增冰箱
+        </button>
       </div>
 
-      {/* 家庭成員 */}
-      <Card className="mb-5">
-        <CardContent className="pt-4 pb-4">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-foreground">家庭成員</h3>
-            <Badge variant="secondary">{family.members.length} 人</Badge>
+      {/* Create fridge form */}
+      {showForm && (
+        <form
+          onSubmit={handleCreate}
+          className="rounded-xl border border-neutral-200 bg-white p-5 space-y-4"
+        >
+          <h2 className="text-[13px] font-semibold text-neutral-700">新增冰箱</h2>
+
+          {error && (
+            <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</div>
+          )}
+
+          {/* Emoji picker */}
+          <div>
+            <label className="block text-xs font-medium text-neutral-500 mb-2">選擇圖示</label>
+            <div className="flex gap-2 flex-wrap">
+              {FRIDGE_EMOJIS.map((em) => (
+                <button
+                  key={em}
+                  type="button"
+                  onClick={() => setNewEmoji(em)}
+                  className={`flex h-9 w-9 items-center justify-center rounded-lg text-lg border transition-all ${
+                    newEmoji === em
+                      ? 'border-neutral-900 bg-neutral-100'
+                      : 'border-neutral-200 hover:border-neutral-300'
+                  }`}
+                >
+                  {em}
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="flex items-center gap-3 flex-wrap mb-3">
-            {family.members.map((m) => (
-              <div key={m.id} className="flex items-center gap-2">
-                <Avatar className="h-8 w-8">
-                  <AvatarFallback className="bg-blue-100 text-blue-700 text-xs font-semibold">
-                    {m.user.name?.charAt(0)}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="text-sm text-foreground">
-                  {m.user.name}
-                  {m.userId === session!.user.id && (
-                    <span className="ml-1 text-xs text-muted-foreground">（你）</span>
-                  )}
-                </span>
+
+          <div>
+            <label className="block text-xs font-medium text-neutral-500 mb-1.5">
+              冰箱名稱 <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              required
+              placeholder="例如：客廳小冰箱"
+              className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm focus:border-neutral-400 focus:outline-none"
+            />
+          </div>
+
+          <div className="flex gap-2 pt-1">
+            <button
+              type="button"
+              onClick={() => { setShowForm(false); setError(''); }}
+              className="flex-1 rounded-lg border border-neutral-200 py-2 text-sm text-neutral-600 hover:bg-neutral-50 transition-colors"
+            >
+              取消
+            </button>
+            <button
+              type="submit"
+              disabled={creating || !newName.trim()}
+              className="flex-1 rounded-lg bg-neutral-900 py-2 text-sm font-medium text-white hover:bg-neutral-700 disabled:opacity-50 transition-colors"
+            >
+              {creating ? '建立中…' : `建立 ${newEmoji} ${newName || '冰箱'}`}
+            </button>
+          </div>
+        </form>
+      )}
+
+      {/* AI Menu shortcut */}
+      <Link href="/fridge/menu" className="group block">
+        <div className="flex items-center gap-4 rounded-xl border border-orange-200 bg-orange-50/60 px-5 py-4 hover:border-orange-300 hover:shadow-sm transition-all">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-100 text-xl flex-shrink-0">
+            👨‍🍳
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-[13px] font-semibold text-orange-900">設計今天的菜單</div>
+            <div className="text-[12px] text-orange-600/80 mt-0.5">根據冰箱食材和預算，讓 AI 幫你設計菜單</div>
+          </div>
+          <ChefHat className="h-4 w-4 text-orange-400 group-hover:text-orange-600 flex-shrink-0 transition-colors" />
+        </div>
+      </Link>
+
+      {/* Fridge list */}
+      <section>
+        <h2 className="text-xs font-semibold text-neutral-400 uppercase tracking-widest mb-3">
+          我的冰箱
+        </h2>
+
+        {loading ? (
+          <div className="space-y-2.5">
+            {[1, 2].map((i) => (
+              <div key={i} className="h-[72px] rounded-xl border border-neutral-200 bg-neutral-50 animate-pulse" />
+            ))}
+          </div>
+        ) : fridges.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-neutral-200 py-12 text-center">
+            <Refrigerator className="h-8 w-8 text-neutral-300 mx-auto mb-3" />
+            <p className="text-sm font-medium text-neutral-500">還沒有冰箱</p>
+            <p className="text-xs text-neutral-400 mt-1">點擊上方「新增冰箱」開始</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {fridges.map((fridge) => (
+              <div key={fridge.id} className="group flex items-center gap-3 rounded-xl border border-neutral-200 bg-white px-4 py-3.5 hover:border-neutral-300 hover:shadow-sm transition-all">
+                {/* Fridge icon */}
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-xl flex-shrink-0">
+                  {fridge.emoji}
+                </div>
+
+                {/* Fridge info — clicking navigates */}
+                <Link href={`/fridge/${fridge.id}`} className="flex-1 min-w-0">
+                  <div className="text-[13px] font-semibold text-neutral-900">{fridge.name}</div>
+                  <div className="text-[12px] text-neutral-500 mt-0.5">
+                    {fridge._count.items > 0
+                      ? `${fridge._count.items} 樣食材`
+                      : '目前是空的'}
+                  </div>
+                </Link>
+
+                {/* Actions */}
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  <button
+                    onClick={() => handleDelete(fridge)}
+                    className="flex h-7 w-7 items-center justify-center rounded-md text-neutral-300 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100"
+                    title="刪除冰箱"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                  <Link
+                    href={`/fridge/${fridge.id}`}
+                    className="flex h-7 w-7 items-center justify-center rounded-md text-neutral-300 hover:text-neutral-600 transition-colors"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Link>
+                </div>
               </div>
             ))}
           </div>
-          <Separator className="mb-3" />
-          <InviteFamilyMember />
-        </CardContent>
-      </Card>
-
-      {/* AI 菜單入口 */}
-      <Link href="/fridge/menu" className="group block mb-6">
-        <Card className="border-orange-200 bg-orange-50/50 hover:border-orange-300 hover:shadow-md transition-all duration-200">
-          <CardContent className="pt-4 pb-4">
-            <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-100 text-2xl shrink-0">
-                👨‍🍳
-              </div>
-              <div className="flex-1">
-                <div className="font-semibold text-orange-900">設計今天的菜單</div>
-                <div className="text-sm text-orange-600/80">根據冰箱食材和預算，讓 AI 幫你設計菜單</div>
-              </div>
-              <ChefHat className="h-5 w-5 text-orange-400 group-hover:text-orange-600 transition-colors" />
-            </div>
-          </CardContent>
-        </Card>
-      </Link>
-
-      {/* 食材列表 */}
-      {items.length === 0 ? (
-        <Card className="border-dashed">
-          <CardContent className="py-16 text-center">
-            <div className="text-4xl mb-4">🥬</div>
-            <p className="text-foreground font-medium mb-1">冰箱是空的</p>
-            <p className="text-muted-foreground text-sm mb-6">新增食材或掃描購物收據</p>
-            <div className="flex gap-3 justify-center">
-              <Button variant="outline" asChild>
-                <Link href="/fridge/scan">
-                  <Camera className="h-4 w-4" />
-                  掃描收據
-                </Link>
-              </Button>
-              <Button asChild className="bg-blue-600 hover:bg-blue-700">
-                <Link href="/fridge/new">
-                  <Plus className="h-4 w-4" />
-                  手動新增
-                </Link>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-8">
-          {items.map((item) => (
-            <FridgeItemCard key={item.id} item={item} addedByName={item.addedBy.name ?? ''} />
-          ))}
-        </div>
-      )}
-
-      {/* 最近用完的食材 */}
-      {usedItems.length > 0 && (
-        <div>
-          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-            最近用完的食材
-          </h2>
-          <Card>
-            <div className="divide-y divide-border">
-              {usedItems.map((item) => (
-                <div key={item.id} className="flex items-center justify-between px-5 py-3">
-                  <div className="flex items-center gap-3">
-                    <span className="text-muted-foreground/50 line-through text-sm">{item.name}</span>
-                    <span className="text-xs text-muted-foreground/40">
-                      {item.quantity} {item.unit}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground/40">
-                    <span>{item.addedBy.name}</span>
-                    <span>{item.usedAt ? new Date(item.usedAt).toLocaleDateString('zh-TW') : ''}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Card>
-        </div>
-      )}
+        )}
+      </section>
     </div>
   );
 }
