@@ -1,7 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+
+interface Substitute {
+  original: string;
+  substitute: string;
+}
 
 interface Meal {
   time: string;
@@ -9,6 +13,7 @@ interface Meal {
   ingredients: string[];
   steps: string[];
   estimatedCost: number;
+  substitutes?: Substitute[];
 }
 
 interface ShoppingItem {
@@ -41,13 +46,12 @@ const timeIcon: Record<string, string> = {
 };
 
 export default function MenuPage() {
-  const router = useRouter();
-
   const [fridges, setFridges] = useState<FridgeOption[]>([]);
   const [selectedFridgeIds, setSelectedFridgeIds] = useState<string[]>([]);
 
   const [form, setForm] = useState({ budget: '', people: '4', preferences: '' });
   const [selectedMeals, setSelectedMeals] = useState<string[]>(['早餐', '午餐', '晚餐']);
+  const [useSubstitutes, setUseSubstitutes] = useState(true);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -59,7 +63,7 @@ export default function MenuPage() {
       .then((r) => r.json())
       .then((data: FridgeOption[]) => {
         setFridges(data);
-        setSelectedFridgeIds(data.map((f) => f.id)); // default: all fridges
+        setSelectedFridgeIds(data.map((f) => f.id));
       });
   }, []);
 
@@ -72,7 +76,7 @@ export default function MenuPage() {
   const toggleFridge = (id: string) => {
     setSelectedFridgeIds((prev) =>
       prev.includes(id)
-        ? prev.length > 1 ? prev.filter((f) => f !== id) : prev // keep at least one
+        ? prev.length > 1 ? prev.filter((f) => f !== id) : prev
         : [...prev, id]
     );
   };
@@ -92,6 +96,7 @@ export default function MenuPage() {
         preferences: form.preferences,
         meals: selectedMeals,
         fridgeIds: selectedFridgeIds,
+        useSubstitutes,
       }),
     });
 
@@ -116,13 +121,13 @@ export default function MenuPage() {
           </div>
           <h1 className="text-2xl font-semibold text-neutral-900 tracking-tight">設計菜單</h1>
         </div>
-        <p className="text-sm text-neutral-500">根據冰箱食材和預算，讓 AI 幫你設計今天的菜單</p>
+        <p className="text-sm text-neutral-500">根據冰箱食材、家庭食譜和預算，讓 AI 幫你設計今天的菜單</p>
       </div>
 
       {/* Form */}
       <form onSubmit={handleGenerate} className="rounded-xl border border-neutral-200 bg-white p-6 mb-6 space-y-5">
 
-        {/* Fridge multi-select — only show if user has multiple fridges */}
+        {/* Fridge multi-select */}
         {fridges.length > 1 && (
           <div>
             <label className="block text-xs font-medium text-neutral-500 mb-2">
@@ -169,7 +174,6 @@ export default function MenuPage() {
               />
             </div>
           </div>
-
           <div>
             <label className="block text-xs font-medium text-neutral-500 mb-1.5">用餐人數</label>
             <select
@@ -214,9 +218,7 @@ export default function MenuPage() {
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-neutral-500 mb-1.5">
-            特別需求（選填）
-          </label>
+          <label className="block text-xs font-medium text-neutral-500 mb-1.5">特別需求（選填）</label>
           <input
             type="text"
             value={form.preferences}
@@ -224,6 +226,23 @@ export default function MenuPage() {
             className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm focus:border-neutral-400 focus:outline-none"
             placeholder="例如：不吃辣、低熱量、快速料理..."
           />
+        </div>
+
+        {/* Substitute ingredients toggle */}
+        <div className="flex items-start gap-3 rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3">
+          <input
+            type="checkbox"
+            id="useSubstitutes"
+            checked={useSubstitutes}
+            onChange={(e) => setUseSubstitutes(e.target.checked)}
+            className="mt-0.5 accent-neutral-800 h-4 w-4 flex-shrink-0"
+          />
+          <label htmlFor="useSubstitutes" className="cursor-pointer">
+            <div className="text-[13px] font-medium text-neutral-800">🔄 優先尋找替代食材</div>
+            <div className="text-[11px] text-neutral-500 mt-0.5 leading-relaxed">
+              當食譜食材不足時，AI 會先在冰箱尋找替代食材，找不到才列入採購清單
+            </div>
+          </label>
         </div>
 
         {error && (
@@ -266,6 +285,11 @@ export default function MenuPage() {
                   <div>
                     <div className="text-[11px] text-neutral-400">{meal.time}</div>
                     <div className="text-[13px] font-semibold text-neutral-900">{meal.name}</div>
+                    {meal.substitutes && meal.substitutes.length > 0 && (
+                      <div className="text-[11px] text-amber-600 mt-0.5">
+                        🔄 使用了 {meal.substitutes.length} 種替代食材
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -276,6 +300,24 @@ export default function MenuPage() {
 
               {expandedMeal === index && (
                 <div className="border-t border-neutral-100 p-4 space-y-4">
+                  {/* Substitutes */}
+                  {meal.substitutes && meal.substitutes.length > 0 && (
+                    <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+                      <div className="text-[11px] font-semibold text-amber-700 uppercase tracking-wide mb-2">
+                        🔄 替代食材
+                      </div>
+                      <div className="space-y-1">
+                        {meal.substitutes.map((sub, i) => (
+                          <div key={i} className="flex items-center gap-2 text-[12px] text-amber-800">
+                            <span className="line-through text-amber-500">{sub.original}</span>
+                            <span>→</span>
+                            <span className="font-medium">{sub.substitute}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <div>
                     <div className="text-[10px] font-semibold text-neutral-400 uppercase tracking-widest mb-2">所需食材</div>
                     <div className="flex flex-wrap gap-2">

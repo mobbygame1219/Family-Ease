@@ -26,6 +26,7 @@ model User {
   activities    Activity[]
   fridgeItems   FridgeItem[]
   fridgesCreated Fridge[]       @relation("FridgeCreator")
+  recipesCreated Recipe[]       @relation("RecipeCreator")
   familyMembers FamilyMember[]
   transactions  Transaction[]
 
@@ -200,6 +201,55 @@ model FamilyGroup {
 
   members  FamilyMember[]
   fridges  Fridge[]
+  recipes  Recipe[]
+}
+
+// ── Recipe Database ───────────────────────────────────────────────────────────
+
+enum RecipeCategory {
+  BREAKFAST
+  LUNCH
+  DINNER
+  SNACK
+}
+
+model Recipe {
+  id          String         @id @default(cuid())
+  title       String
+  description String?
+  servings    Int            @default(2)
+  cookTime    Int?
+  category    RecipeCategory @default(DINNER)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  familyId    String
+  createdById String
+
+  family      FamilyGroup        @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  createdBy   User               @relation("RecipeCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  ingredients RecipeIngredient[]
+  steps       RecipeStep[]
+}
+
+model RecipeIngredient {
+  id       String  @id @default(cuid())
+  name     String
+  quantity Float
+  unit     String
+  optional Boolean @default(false)
+
+  recipeId String
+  recipe   Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+}
+
+model RecipeStep {
+  id          String @id @default(cuid())
+  order       Int
+  description String
+
+  recipeId String
+  recipe   Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
 }
 
 model FamilyMember {

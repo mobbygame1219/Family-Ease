@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Plus, Trash2, ChefHat, ChevronRight, Refrigerator } from 'lucide-react';
+import { Plus, Trash2, ChefHat, ChevronRight, Refrigerator, BookOpen } from 'lucide-react';
 
 interface Fridge {
   id: string;
@@ -156,19 +156,35 @@ export default function FridgePage() {
         </form>
       )}
 
-      {/* AI Menu shortcut */}
-      <Link href="/fridge/menu" className="group block">
-        <div className="flex items-center gap-4 rounded-xl border border-orange-200 bg-orange-50/60 px-5 py-4 hover:border-orange-300 hover:shadow-sm transition-all">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-100 text-xl flex-shrink-0">
-            👨‍🍳
+      {/* Quick access cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+        {/* AI Menu */}
+        <Link href="/fridge/menu" className="group block">
+          <div className="flex items-center gap-3.5 rounded-xl border border-orange-200 bg-orange-50/60 px-4 py-3.5 hover:border-orange-300 hover:shadow-sm transition-all">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-orange-100 text-lg flex-shrink-0">
+              👨‍🍳
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-[13px] font-semibold text-orange-900">設計今天的菜單</div>
+              <div className="text-[12px] text-orange-600/80 mt-0.5">根據食材和預算，AI 設計菜單</div>
+            </div>
+            <ChefHat className="h-4 w-4 text-orange-400 group-hover:text-orange-600 flex-shrink-0 transition-colors" />
           </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-[13px] font-semibold text-orange-900">設計今天的菜單</div>
-            <div className="text-[12px] text-orange-600/80 mt-0.5">根據冰箱食材和預算，讓 AI 幫你設計菜單</div>
+        </Link>
+        {/* Recipe library */}
+        <Link href="/fridge/recipes" className="group block">
+          <div className="flex items-center gap-3.5 rounded-xl border border-violet-200 bg-violet-50/60 px-4 py-3.5 hover:border-violet-300 hover:shadow-sm transition-all">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-100 text-lg flex-shrink-0">
+              📖
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-[13px] font-semibold text-violet-900">食譜資料庫</div>
+              <div className="text-[12px] text-violet-600/80 mt-0.5">管理家庭食譜，AI 優先參考</div>
+            </div>
+            <BookOpen className="h-4 w-4 text-violet-400 group-hover:text-violet-600 flex-shrink-0 transition-colors" />
           </div>
-          <ChefHat className="h-4 w-4 text-orange-400 group-hover:text-orange-600 flex-shrink-0 transition-colors" />
-        </div>
-      </Link>
+        </Link>
+      </div>
 
       {/* Fridge list */}
       <section>
