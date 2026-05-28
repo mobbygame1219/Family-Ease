@@ -3,103 +3,103 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Plus, ArrowLeft } from 'lucide-react';
-import CalendarGrid from '@/components/calendarease/CalendarGrid';
+import { ArrowLeft, Users } from 'lucide-react';
+import CalendarView from '@/components/calendarease/CalendarView';
+import LeftPanel from '@/components/calendarease/LeftPanel';
 import InviteMemberForm from '@/components/calendarease/InviteMemberForm';
 
 interface PageProps {
   params: { groupId: string };
-  searchParams: { year?: string; month?: string };
 }
 
-export default async function GroupCalendarPage({ params, searchParams }: PageProps) {
+export default async function GroupCalendarPage({ params }: PageProps) {
   const session = await getServerSession(authOptions);
   if (!session?.user) return null;
 
   const group = await prisma.calendarGroup.findUnique({
     where: { id: params.groupId },
-    include: { members: { include: { user: { select: { id: true, name: true } } } } },
+    include: {
+      members: {
+        include: { user: { select: { id: true, name: true, email: true } } },
+      },
+    },
   });
 
-  const isMember = group?.members.some((m) => m.userId === session.user.id);
-  if (!group || !isMember) redirect('/calendarease');
+  const membership = group?.members.find(m => m.userId === session.user.id);
+  if (!group || !membership) redirect('/calendarease');
 
-  const now = new Date();
-  const year = Number(searchParams.year ?? now.getFullYear());
-  const month = Number(searchParams.month ?? now.getMonth() + 1);
-  const startOf = new Date(year, month - 1, 1);
-  const endOf = new Date(year, month, 0, 23, 59, 59);
-
-  const events = await prisma.calendarEvent.findMany({
-    where: { groupId: params.groupId, startAt: { gte: startOf, lte: endOf } },
-    include: { createdBy: { select: { id: true, name: true } } },
-    orderBy: { startAt: 'asc' },
-  });
-
-  // Serialize events (include isFromPetLog so CalendarGrid can hide edit/delete)
-  const serializedEvents = events.map((e) => ({
-    id: e.id,
-    title: e.title,
-    color: e.color,
-    startAt: e.startAt.toISOString(),
-    endAt: e.endAt.toISOString(),
-    isAllDay: e.isAllDay,
-    isFromPetLog: e.isFromPetLog,
-    location: e.location ?? null,
-    description: e.description ?? null,
-    createdBy: { id: e.createdBy.id, name: e.createdBy.name ?? '' },
-  }));
-
-  const currentUserRole = group.members.find((m) => m.userId === session.user.id)?.role ?? 'MEMBER';
+  const isOwner = membership.role === 'OWNER';
 
   return (
-    <div className="p-4 max-w-5xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-5">
-        <div className="flex items-center gap-3">
-          <Link href="/calendarease" className="text-muted-foreground hover:text-foreground">
-            <ArrowLeft className="h-5 w-5" />
-          </Link>
-          <div>
-            <h1 className="text-xl font-bold text-foreground">{group.name}</h1>
-            <p className="text-xs text-muted-foreground">{group.members.length} 位成員</p>
-          </div>
-        </div>
-        <Button asChild className="bg-purple-600 hover:bg-purple-700 text-white">
-          <Link href={`/calendarease/${params.groupId}/events/new`}>
-            <Plus className="h-4 w-4 mr-1" />
-            新增活動
-          </Link>
-        </Button>
-      </div>
+    <div
+      data-cal
+      className="flex h-full overflow-hidden"
+      style={{ background: 'var(--cal-bg)' }}
+    >
+      {/* ── Left panel (next 7 days + pets) ───────────────────── */}
+      <LeftPanel groupId={params.groupId} />
 
-      {/* Members + Invite */}
-      <div className="flex items-center gap-3 mb-5 flex-wrap">
-        <div className="flex gap-2 flex-wrap">
-          {group.members.map((m) => (
-            <div
-              key={m.id}
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-purple-100 text-purple-700 text-sm font-semibold"
-              title={`${m.user.name ?? '?'} (${m.role === 'OWNER' ? '管理員' : '成員'})`}
+      {/* ── Main area ─────────────────────────────────────────── */}
+      <div className="flex flex-col flex-1 overflow-hidden">
+
+        {/* Group header bar */}
+        <div
+          className="flex items-center gap-3 px-4 py-2.5 border-b flex-shrink-0"
+          style={{ background: 'var(--cal-panel-bg)', borderColor: 'var(--cal-border)' }}
+        >
+          <Link
+            href="/calendarease"
+            className="p-1 rounded-lg hover:bg-black/5 transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" style={{ color: 'var(--cal-text2)' }} />
+          </Link>
+
+          <div className="flex-1 min-w-0">
+            <h1
+              className="text-base font-semibold truncate"
+              style={{ color: 'var(--cal-text)', fontFamily: "'Lora', serif" }}
             >
-              {(m.user.name ?? '?')[0].toUpperCase()}
-            </div>
-          ))}
-        </div>
-        {/* OWNER can invite */}
-        {currentUserRole === 'OWNER' && (
-          <InviteMemberForm groupId={params.groupId} />
-        )}
-      </div>
+              {group.name}
+            </h1>
+          </div>
 
-      {/* Calendar Grid */}
-      <CalendarGrid
-        year={year}
-        month={month}
-        events={serializedEvents}
-        groupId={params.groupId}
-      />
+          {/* Member avatars */}
+          <div className="flex items-center gap-1.5">
+            <Users className="h-3.5 w-3.5" style={{ color: 'var(--cal-text3)' }} />
+            <div className="flex -space-x-1.5">
+              {group.members.slice(0, 5).map(m => (
+                <div
+                  key={m.id}
+                  className="flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold text-white border border-white"
+                  style={{ background: 'var(--cal-personal-deep)' }}
+                  title={m.user.name ?? m.user.email ?? '?'}
+                >
+                  {(m.user.name ?? m.user.email ?? '?')[0].toUpperCase()}
+                </div>
+              ))}
+              {group.members.length > 5 && (
+                <div
+                  className="flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold border border-white"
+                  style={{ background: 'var(--cal-bg3)', color: 'var(--cal-text2)' }}
+                >
+                  +{group.members.length - 5}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Invite (owner only) */}
+          {isOwner && (
+            <InviteMemberForm groupId={params.groupId} />
+          )}
+        </div>
+
+        {/* Calendar */}
+        <CalendarView
+          groupId={params.groupId}
+          currentUserId={session.user.id}
+        />
+      </div>
     </div>
   );
 }

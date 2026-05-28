@@ -1,8 +1,30 @@
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600&family=Noto+Sans+TC:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ── CalendarEase warm color system ──────────────────────────────── */
+[data-cal] {
+  --cal-bg:              #f7f3ec;
+  --cal-bg2:             #f0ece4;
+  --cal-bg3:             #e8e3da;
+  --cal-panel-bg:        #faf8f4;
+  --cal-border:          rgba(0,0,0,0.07);
+  --cal-text:            #3e3830;
+  --cal-text2:           #7a7268;
+  --cal-text3:           #a89e94;
+  --cal-work-bg:         #dce8f0;
+  --cal-work-card:       #e8f2f8;
+  --cal-work-accent:     #8ab8cc;
+  --cal-work-deep:       #3a6070;
+  --cal-personal-bg:     #f0dce8;
+  --cal-personal-card:   #f8eef4;
+  --cal-personal-accent: #cc8bac;
+  --cal-personal-deep:   #703a60;
+  --cal-pet-bg:          #ddeedd;
+  --cal-pet-accent:      #9ab89a;
+}
 
 @layer base {
   :root {

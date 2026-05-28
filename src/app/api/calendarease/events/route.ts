@@ -16,8 +16,16 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'groupId is required' }, { status: 400 });
   }
 
+  const from = searchParams.get('from');
+  const to   = searchParams.get('to');
+
   const events = await prisma.calendarEvent.findMany({
-    where: { groupId },
+    where: {
+      groupId,
+      ...(from && to
+        ? { startAt: { gte: new Date(from), lte: new Date(to) } }
+        : {}),
+    },
     include: {
       createdBy: { select: { id: true, name: true } },
     },
