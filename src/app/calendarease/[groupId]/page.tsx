@@ -37,7 +37,7 @@ export default async function GroupCalendarPage({ params }: PageProps) {
       style={{ background: 'var(--cal-bg)' }}
     >
       {/* ── Left panel (next 7 days + pets) ───────────────────── */}
-      <LeftPanel groupId={params.groupId} />
+      <LeftPanel groupId={params.groupId} currentUserId={session.user.id} />
 
       {/* ── Main area ─────────────────────────────────────────── */}
       <div className="flex flex-col flex-1 overflow-hidden">

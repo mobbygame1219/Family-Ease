@@ -1,6 +1,7 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import {
   CalendarHeart, Users, PawPrint,
@@ -31,6 +32,11 @@ export default async function CalendarEasePage() {
     },
     orderBy: { createdAt: 'desc' },
   });
+
+  // 已有群組 → 直接跳轉第一個群組的行事曆
+  if (groups.length > 0) {
+    redirect(`/calendarease/${groups[0].id}`);
+  }
 
   const groupIds = groups.map((g) => g.id);
   const pets = groupIds.length > 0

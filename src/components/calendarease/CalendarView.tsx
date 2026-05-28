@@ -337,72 +337,81 @@ function WeekView({
   const nowTop = (nowMin - DAY_START) / 30 * SLOT_H;
   const showNow = nowMin >= DAY_START && nowMin <= DAY_END;
 
+  // Single scroll container: headers are sticky inside it,
+  // so headers + grid always share the exact same available width.
   return (
-    <div className="flex flex-col h-full overflow-hidden">
-      {/* Day header row */}
-      <div className="flex flex-shrink-0 border-b" style={{ borderColor: 'var(--cal-border)' }}>
-        <div className="w-12 flex-shrink-0" />
-        {days.map((day, i) => {
-          const isT = isToday(day);
-          return (
-            <div
-              key={i}
-              className="flex-1 flex flex-col items-center py-1.5 border-l"
-              style={{ borderColor: 'var(--cal-border)', background: 'var(--cal-panel-bg)' }}
-            >
-              <span className="text-[10px]" style={{ color: 'var(--cal-text3)' }}>
-                {DAY_LABELS[i]}
-              </span>
-              <span
-                className="text-sm font-semibold w-6 h-6 flex items-center justify-center rounded-full mt-0.5"
-                style={{
-                  background: isT ? 'var(--cal-personal-deep)' : 'transparent',
-                  color: isT ? 'white' : 'var(--cal-text)',
-                }}
+    <div className="h-full overflow-y-auto scrollbar-thin">
+
+      {/* ── Sticky header block (day labels + all-day row) ──────────────── */}
+      <div
+        className="sticky top-0 z-20 border-b"
+        style={{ background: 'var(--cal-panel-bg)', borderColor: 'var(--cal-border)' }}
+      >
+        {/* Day-of-week + date numbers */}
+        <div className="flex border-b" style={{ borderColor: 'var(--cal-border)' }}>
+          <div className="w-12 flex-shrink-0" />
+          {days.map((day, i) => {
+            const isT = isToday(day);
+            return (
+              <div
+                key={i}
+                className="flex-1 flex flex-col items-center py-1.5 border-l"
+                style={{ borderColor: 'var(--cal-border)' }}
               >
-                {format(day, 'd')}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* All-day row */}
-      <div className="flex flex-shrink-0 border-b" style={{ borderColor: 'var(--cal-border)', minHeight: 24 }}>
-        <div className="w-12 flex-shrink-0 flex items-center justify-end pr-1.5">
-          <span className="text-[9px]" style={{ color: 'var(--cal-text3)' }}>全天</span>
+                <span className="text-[10px]" style={{ color: 'var(--cal-text3)' }}>
+                  {DAY_LABELS[i]}
+                </span>
+                <span
+                  className="text-sm font-semibold w-6 h-6 flex items-center justify-center rounded-full mt-0.5"
+                  style={{
+                    background: isT ? 'var(--cal-personal-deep)' : 'transparent',
+                    color: isT ? 'white' : 'var(--cal-text)',
+                  }}
+                >
+                  {format(day, 'd')}
+                </span>
+              </div>
+            );
+          })}
         </div>
-        {days.map((day, i) => {
-          const allDayEvs = events.filter(ev => ev.isAllDay && isSameDay(parseISO(ev.startAt), day));
-          return (
-            <div
-              key={i}
-              className="flex-1 border-l px-0.5 py-0.5 space-y-0.5"
-              style={{ borderColor: 'var(--cal-border)' }}
-            >
-              {allDayEvs.map(ev => {
-                const cat = evCat(ev);
-                return (
-                  <div
-                    key={ev.id}
-                    data-event="1"
-                    onClick={e => { e.stopPropagation(); onEventClick(ev, e.clientX, e.clientY); }}
-                    className="text-[9px] font-medium rounded px-1 truncate cursor-pointer leading-4"
-                    style={{ background: CAT_BG[cat], color: CAT_DEEP[cat] }}
-                  >
-                    {ev.title}
-                  </div>
-                );
-              })}
-            </div>
-          );
-        })}
+
+        {/* All-day row */}
+        <div className="flex" style={{ minHeight: 24 }}>
+          <div className="w-12 flex-shrink-0 flex items-center justify-end pr-1.5">
+            <span className="text-[9px]" style={{ color: 'var(--cal-text3)' }}>全天</span>
+          </div>
+          {days.map((day, i) => {
+            const allDayEvs = events.filter(ev => ev.isAllDay && isSameDay(parseISO(ev.startAt), day));
+            return (
+              <div
+                key={i}
+                className="flex-1 border-l px-0.5 py-0.5 space-y-0.5"
+                style={{ borderColor: 'var(--cal-border)' }}
+              >
+                {allDayEvs.map(ev => {
+                  const cat = evCat(ev);
+                  return (
+                    <div
+                      key={ev.id}
+                      data-event="1"
+                      onClick={e => { e.stopPropagation(); onEventClick(ev, e.clientX, e.clientY); }}
+                      className="text-[9px] font-medium rounded px-1 truncate cursor-pointer leading-4"
+                      style={{ background: CAT_BG[cat], color: CAT_DEEP[cat] }}
+                    >
+                      {ev.title}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
-      {/* Scrollable time grid */}
-      <div className="flex flex-1 overflow-y-auto scrollbar-thin">
+      {/* ── Time grid (scrolls with the container) ──────────────────────── */}
+      <div className="flex" style={{ height: GRID_H }}>
         {/* Time labels */}
-        <div className="w-12 flex-shrink-0 relative" style={{ height: GRID_H }}>
+        <div className="w-12 flex-shrink-0 relative">
           {HOURS.map((h, i) => (
             <div
               key={h}
@@ -454,7 +463,7 @@ function WeekView({
               {/* Now line */}
               {isToday(day) && showNow && (
                 <div
-                  className="absolute left-0 right-0 z-20 flex items-center pointer-events-none"
+                  className="absolute left-0 right-0 z-10 flex items-center pointer-events-none"
                   style={{ top: nowTop }}
                 >
                   <div
