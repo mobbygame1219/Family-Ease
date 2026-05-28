@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -32,7 +34,7 @@
     --border:           220  13%   91%;
     --input:            220  13%   91%;
     --ring:             142.4 71.8% 29.2%;
-    --radius:           0.5rem;
+    --radius:           0.75rem;
   }
 
   * {
@@ -48,6 +50,7 @@
 
   body {
     @apply bg-background text-foreground;
+    font-family: 'Noto Sans TC', var(--font-geist-sans), system-ui, sans-serif;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     line-height: 1.6;
   }
@@ -65,6 +68,32 @@
   /* Clean selection color */
   ::selection {
     @apply bg-primary/15 text-foreground;
+  }
+
+  /* Subtle page entry animation */
+  main {
+    animation: fadeIn 0.15s ease-out;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+}
+
+@layer components {
+  /* Shared card style */
+  .card {
+    @apply rounded-2xl border border-neutral-200 bg-white shadow-sm;
+  }
+
+  /* Page banner gradient strip */
+  .page-banner {
+    @apply rounded-2xl px-6 py-5 mb-6;
+  }
+
+  /* Unified button rounding */
+  button, .btn {
+    @apply rounded-xl;
   }
 }
 

@@ -103,7 +103,7 @@ export default function NewTransactionPage() {
                         : 'border-border bg-background text-muted-foreground hover:border-muted-foreground/40'
                     }`}
                   >
-                    <span className="text-xl">{meta.icon}</span>
+                    <meta.Icon className="h-5 w-5" strokeWidth={1.75} />
                     <span className="leading-tight text-center">{meta.label.split('＋')[0]}</span>
                   </button>
                 ))}

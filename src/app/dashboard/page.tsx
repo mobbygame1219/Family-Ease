@@ -5,9 +5,11 @@ import Link from 'next/link';
 import { formatCurrency } from '@/utils/balance';
 import ActivityFeed from '@/components/ActivityFeed';
 import ExpenseChart from '@/components/ExpenseChart';
-import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ChevronRight } from 'lucide-react';
+import {
+  ChevronRight, HandCoins, Refrigerator, NotebookPen, CalendarHeart,
+  type LucideIcon,
+} from 'lucide-react';
 
 async function getDashboardData(userId: string) {
   const [groups, recentExpenses] = await Promise.all([
@@ -76,32 +78,43 @@ async function getDashboardData(userId: string) {
 }
 
 // ── Feature cards ─────────────────────────────────────────────────────────────
-const features = [
+const features: {
+  href: string; Icon: LucideIcon; iconBg: string; iconColor: string;
+  borderAccent: string; title: string; desc: string;
+}[] = [
   {
     href: '/splitease',
-    icon: '💰',
-    iconBg: 'bg-emerald-50',
+    Icon: HandCoins,
+    iconBg: 'bg-split-50',
+    iconColor: 'text-split-600',
+    borderAccent: 'border-l-4 border-l-split-500',
     title: 'SplitEase',
     desc: '分帳、記錄支出、結清帳款',
   },
   {
     href: '/fridge',
-    icon: '🧊',
-    iconBg: 'bg-blue-50',
+    Icon: Refrigerator,
+    iconBg: 'bg-fridge-50',
+    iconColor: 'text-fridge-500',
+    borderAccent: 'border-l-4 border-l-fridge-500',
     title: 'Family Fridge',
     desc: '管理冰箱食材、掃描收據、設計菜單',
   },
   {
     href: '/ledgerease',
-    icon: '📒',
-    iconBg: 'bg-violet-50',
+    Icon: NotebookPen,
+    iconBg: 'bg-ledger-50',
+    iconColor: 'text-ledger-500',
+    borderAccent: 'border-l-4 border-l-ledger-500',
     title: 'LedgerEase',
     desc: '記錄個人支出、圖表分析、掌握花費',
   },
   {
     href: '/calendarease',
-    icon: '📅',
-    iconBg: 'bg-purple-50',
+    Icon: CalendarHeart,
+    iconBg: 'bg-calendar-50',
+    iconColor: 'text-calendar-500',
+    borderAccent: 'border-l-4 border-l-calendar-500',
     title: 'CalendarEase',
     desc: '家庭行事曆、行程提醒、寵物記錄',
   },
@@ -120,8 +133,8 @@ export default async function DashboardPage() {
 
       {/* ── Welcome ──────────────────────────────────────────────────── */}
       <div>
-        <h1 className="text-2xl font-semibold text-neutral-900 tracking-tight">
-          嗨，{firstName} 👋
+        <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-brand-600 to-brand-400 bg-clip-text text-transparent">
+          嗨，{firstName}
         </h1>
         <p className="text-sm text-neutral-500 mt-1">歡迎回到 FamilyEase</p>
       </div>
@@ -134,9 +147,9 @@ export default async function DashboardPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
           {features.map((f) => (
             <Link key={f.href} href={f.href} className="group block">
-              <div className="flex items-start gap-3.5 rounded-xl border border-neutral-200 bg-white px-4 py-3.5 hover:border-neutral-300 hover:shadow-sm transition-all duration-150">
-                <div className={`flex h-9 w-9 items-center justify-center rounded-lg text-[18px] flex-shrink-0 ${f.iconBg}`}>
-                  {f.icon}
+              <div className={`flex items-start gap-3.5 rounded-xl border border-neutral-200 bg-white px-4 py-3.5 hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 ${f.borderAccent}`}>
+                <div className={`flex h-9 w-9 items-center justify-center rounded-xl flex-shrink-0 ${f.iconBg}`}>
+                  <f.Icon className={`h-5 w-5 ${f.iconColor}`} strokeWidth={1.75} />
                 </div>
                 <div className="flex-1 min-w-0 py-0.5">
                   <div className="text-[13px] font-semibold text-neutral-900 leading-tight">

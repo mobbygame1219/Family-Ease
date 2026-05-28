@@ -2,24 +2,24 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Receipt, Refrigerator, BookOpen, CalendarDays } from 'lucide-react';
+import { Home, HandCoins, Refrigerator, NotebookPen, CalendarHeart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
-  { href: '/dashboard',    icon: LayoutDashboard, label: '首頁'     },
-  { href: '/splitease',    icon: Receipt,          label: 'Split'   },
-  { href: '/fridge',       icon: Refrigerator,     label: 'Fridge'  },
-  { href: '/ledgerease',   icon: BookOpen,          label: 'Ledger'  },
-  { href: '/calendarease', icon: CalendarDays,      label: 'Calendar' },
+  { href: '/dashboard',    icon: Home,          label: '首頁',     activeColor: 'text-brand-600'    },
+  { href: '/splitease',    icon: HandCoins,     label: 'Split',    activeColor: 'text-split-600'    },
+  { href: '/fridge',       icon: Refrigerator,  label: 'Fridge',   activeColor: 'text-fridge-500'   },
+  { href: '/ledgerease',   icon: NotebookPen,   label: 'Ledger',   activeColor: 'text-ledger-500'   },
+  { href: '/calendarease', icon: CalendarHeart, label: 'Calendar', activeColor: 'text-calendar-500' },
 ];
 
 export default function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-neutral-200">
+    <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-lg border-t border-gray-100">
       <div className="flex items-center justify-around h-[56px] px-1">
-        {navItems.map(({ href, icon: Icon, label }) => {
+        {navItems.map(({ href, icon: Icon, label, activeColor }) => {
           const active = pathname === href || pathname.startsWith(href + '/');
           return (
             <Link
@@ -27,12 +27,12 @@ export default function BottomNav() {
               href={href}
               className={cn(
                 'flex flex-col items-center justify-center gap-[3px] flex-1 py-2 transition-colors',
-                active ? 'text-neutral-900' : 'text-neutral-400'
+                active ? activeColor : 'text-neutral-400'
               )}
             >
               <Icon
                 className="h-[19px] w-[19px]"
-                strokeWidth={active ? 2.4 : 1.8}
+                strokeWidth={active ? 2.25 : 1.75}
               />
               <span
                 className={cn(
@@ -47,7 +47,7 @@ export default function BottomNav() {
         })}
       </div>
       {/* Safe area for iOS home indicator */}
-      <div className="h-safe-area-inset-bottom bg-white/95" />
+      <div className="h-safe-area-inset-bottom bg-white/90" />
     </div>
   );
 }
