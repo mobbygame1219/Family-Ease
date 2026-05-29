@@ -52,6 +52,7 @@ export async function POST(request: Request) {
       isAllDay,
       color,
       notifyBefore,
+      attendeeIds,
       groupId,
     } = body as {
       title: string;
@@ -62,6 +63,7 @@ export async function POST(request: Request) {
       isAllDay?: boolean;
       color?: string;
       notifyBefore?: number;
+      attendeeIds?: string;
       groupId: string;
     };
 
@@ -96,6 +98,7 @@ export async function POST(request: Request) {
         isAllDay: isAllDay ?? false,
         color,
         notifyBefore,
+        attendeeIds: attendeeIds ?? '[]',
         groupId,
         createdById: session.user.id,
       },

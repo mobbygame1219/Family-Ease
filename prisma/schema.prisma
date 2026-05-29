@@ -36,6 +36,7 @@ model User {
   calendarEventsCreated CalendarEvent[]  @relation("CalendarEventCreator")
   petsCreated           Pet[]            @relation("PetCreator")
   petLogsLogged         PetLog[]         @relation("PetLogLogger")
+  prepTasksCreated      PrepTask[]       @relation("PrepTaskCreator")
 }
 
 model Group {
@@ -345,6 +346,7 @@ model CalendarEvent {
   isAllDay     Boolean  @default(false)
   color        String   @default("#8b5cf6")
   notifyBefore Int      @default(15)
+  attendeeIds  String?
   isFromPetLog Boolean  @default(false)
   createdAt    DateTime @default(now())
 
@@ -353,6 +355,23 @@ model CalendarEvent {
 
   group     CalendarGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
   createdBy User          @relation("CalendarEventCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  prepTasks PrepTask[]
+}
+
+model PrepTask {
+  id          String    @id @default(cuid())
+  title       String
+  notes       String?
+  isDone      Boolean   @default(false)
+  suggestedAt DateTime?
+  order       Int       @default(0)
+  createdAt   DateTime  @default(now())
+
+  eventId     String
+  createdById String
+
+  event     CalendarEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  createdBy User          @relation("PrepTaskCreator", fields: [createdById], references: [id], onDelete: Cascade)
 }
 
 model Pet {
