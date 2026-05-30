@@ -16,8 +16,16 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'groupId is required' }, { status: 400 });
   }
 
+  const from = searchParams.get('from');
+  const to   = searchParams.get('to');
+
   const events = await prisma.calendarEvent.findMany({
-    where: { groupId },
+    where: {
+      groupId,
+      ...(from && to
+        ? { startAt: { gte: new Date(from), lte: new Date(to) } }
+        : {}),
+    },
     include: {
       createdBy: { select: { id: true, name: true } },
     },
@@ -44,6 +52,7 @@ export async function POST(request: Request) {
       isAllDay,
       color,
       notifyBefore,
+      attendeeIds,
       groupId,
     } = body as {
       title: string;
@@ -54,6 +63,7 @@ export async function POST(request: Request) {
       isAllDay?: boolean;
       color?: string;
       notifyBefore?: number;
+      attendeeIds?: string;
       groupId: string;
     };
 
@@ -88,6 +98,7 @@ export async function POST(request: Request) {
         isAllDay: isAllDay ?? false,
         color,
         notifyBefore,
+        attendeeIds: attendeeIds ?? '[]',
         groupId,
         createdById: session.user.id,
       },

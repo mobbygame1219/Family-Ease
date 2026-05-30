@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Trash2 } from 'lucide-react';
+import { Trash2, ClipboardList } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -33,7 +33,7 @@ export default function TransactionList({ transactions: initial }: Props) {
     return (
       <Card className="border-dashed">
         <div className="py-14 text-center">
-          <div className="text-4xl mb-3">📋</div>
+          <ClipboardList className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" strokeWidth={1.5} />
           <p className="text-foreground font-medium mb-1">還沒有任何記帳記錄</p>
           <p className="text-muted-foreground text-sm">點擊右上角「新增記帳」開始記錄</p>
         </div>
@@ -52,8 +52,8 @@ export default function TransactionList({ transactions: initial }: Props) {
           });
           return (
             <div key={t.id} className="flex items-center gap-3 px-4 py-3.5">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-muted text-lg shrink-0">
-                {meta.icon}
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-muted shrink-0">
+                <meta.Icon className="h-[18px] w-[18px]" strokeWidth={1.75} style={{ color: meta.color }} />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">

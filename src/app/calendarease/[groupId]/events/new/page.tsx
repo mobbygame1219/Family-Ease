@@ -11,12 +11,12 @@ import { ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const PRESET_COLORS = [
-  { label: '紫', value: '#8b5cf6' },
-  { label: '藍', value: '#3b82f6' },
-  { label: '綠', value: '#22c55e' },
-  { label: '紅', value: '#ef4444' },
-  { label: '橙', value: '#f97316' },
-  { label: '粉', value: '#ec4899' },
+  { label: '工作・藍',   value: '#3a6070' },
+  { label: '工作・淡藍', value: '#8ab8cc' },
+  { label: '個人・玫瑰', value: '#703a60' },
+  { label: '個人・粉',   value: '#cc8bac' },
+  { label: '家庭・綠',   value: '#4a7c4a' },
+  { label: '其他・橙',   value: '#c47830' },
 ];
 
 const NOTIFICATION_OPTIONS = [
@@ -70,7 +70,7 @@ export default function NewEventPage() {
   const [startDate, setStartDate] = useState(defaultDate);
   const [location, setLocation] = useState('');
   const [description, setDescription] = useState('');
-  const [color, setColor] = useState('#8b5cf6');
+  const [color, setColor] = useState('#3a6070');
   const [notifyBefore, setNotifyBefore] = useState('0');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -164,7 +164,7 @@ export default function NewEventPage() {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="活動名稱"
-                className="border-purple-200 focus-visible:ring-purple-500"
+                className="border-[#cc8bac] focus-visible:ring-[#703a60]"
               />
             </div>
 
@@ -175,7 +175,7 @@ export default function NewEventPage() {
                 id="allDay"
                 checked={isAllDay}
                 onChange={(e) => setIsAllDay(e.target.checked)}
-                className="h-4 w-4 accent-purple-600"
+                className="h-4 w-4 accent-[#703a60]"
               />
               <Label htmlFor="allDay" className="text-sm cursor-pointer">全天活動</Label>
             </div>
@@ -189,7 +189,7 @@ export default function NewEventPage() {
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="border-purple-200 focus-visible:ring-purple-500"
+                  className="border-[#cc8bac] focus-visible:ring-[#703a60]"
                 />
               </div>
             ) : (
@@ -201,7 +201,7 @@ export default function NewEventPage() {
                     type="datetime-local"
                     value={startAt}
                     onChange={(e) => handleStartAtChange(e.target.value)}
-                    className="border-purple-200 focus-visible:ring-purple-500"
+                    className="border-[#cc8bac] focus-visible:ring-[#703a60]"
                   />
                 </div>
                 <div>
@@ -216,7 +216,7 @@ export default function NewEventPage() {
                     type="datetime-local"
                     value={endAt}
                     onChange={(e) => handleEndAtChange(e.target.value)}
-                    className="border-purple-200 focus-visible:ring-purple-500"
+                    className="border-[#cc8bac] focus-visible:ring-[#703a60]"
                   />
                 </div>
               </div>
@@ -230,7 +230,7 @@ export default function NewEventPage() {
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
                 placeholder="（選填）"
-                className="border-purple-200 focus-visible:ring-purple-500"
+                className="border-[#cc8bac] focus-visible:ring-[#703a60]"
               />
             </div>
 
@@ -243,7 +243,7 @@ export default function NewEventPage() {
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="（選填）"
                 rows={3}
-                className="w-full rounded-md border border-purple-200 bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-0 resize-none"
+                className="w-full rounded-md border border-[#cc8bac] bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#703a60] focus:ring-offset-0 resize-none"
               />
             </div>
 
@@ -274,7 +274,7 @@ export default function NewEventPage() {
                 id="notify"
                 value={notifyBefore}
                 onChange={(e) => setNotifyBefore(e.target.value)}
-                className="w-full rounded-md border border-purple-200 bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full rounded-md border border-[#cc8bac] bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#703a60]"
               >
                 {NOTIFICATION_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>
@@ -288,7 +288,7 @@ export default function NewEventPage() {
               <Button
                 type="submit"
                 disabled={loading}
-                className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
+                className="flex-1 bg-[#703a60] hover:bg-[#5a2e4d] text-white"
               >
                 {loading ? '儲存中…' : '儲存活動'}
               </Button>

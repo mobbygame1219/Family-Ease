@@ -122,6 +122,15 @@ export async function POST(request: Request) {
       groupId,
     },
   });
-
+  
+// 記錄活動
+await prisma.activity.create({
+  data: {
+    type: 'SETTLEMENT',
+    message: `結清了 $${amount} 的帳款`,
+    userId: payerId,
+    groupId,
+  },
+});
   return NextResponse.json({ success: true });
 }

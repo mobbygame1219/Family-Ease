@@ -3,9 +3,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, parseISO } from 'date-fns';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Plus, BookOpen, TrendingDown, Upload } from 'lucide-react';
+import { Plus, NotebookPen, BookOpen, TrendingDown, Upload } from 'lucide-react';
 import DateRangePicker from '@/components/ledger/DateRangePicker';
 import LedgerCharts from '@/components/ledger/LedgerCharts';
 import TransactionList from '@/components/ledger/TransactionList';
@@ -79,34 +77,37 @@ export default async function LedgerPage({ searchParams }: PageProps) {
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
-      {/* Header */}
-      <div className="flex items-start justify-between mb-6">
-        <div>
-          <div className="flex items-center gap-3 mb-1">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-100 text-2xl">
-              📒
+
+      {/* ── Orange gradient banner ────────────────────── */}
+      <div className="page-banner bg-gradient-to-r from-ledger-600 to-ledger-500 text-white mb-6">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/20">
+              <NotebookPen className="h-6 w-6 text-white" strokeWidth={1.75} />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-foreground">記帳本</h1>
-              <p className="text-muted-foreground text-sm">
+              <h1 className="text-2xl font-bold tracking-tight">記帳本</h1>
+              <p className="text-ledger-100 text-sm mt-0.5">
                 {format(fromDate, 'yyyy/MM/dd')} — {format(toDate, 'yyyy/MM/dd')}
               </p>
             </div>
           </div>
-        </div>
-        <div className="flex gap-2">
-          <Button asChild variant="outline">
-            <Link href="/ledgerease/import">
-              <Upload className="h-4 w-4" />
-              匯入載具 CSV
+          <div className="flex gap-2">
+            <Link
+              href="/ledgerease/import"
+              className="flex items-center gap-1.5 rounded-xl bg-white/20 hover:bg-white/30 border border-white/30 px-3 py-1.5 text-[13px] font-medium text-white transition-colors"
+            >
+              <Upload className="h-3.5 w-3.5" />
+              匯入 CSV
             </Link>
-          </Button>
-          <Button asChild className="bg-violet-600 hover:bg-violet-700">
-            <Link href="/ledgerease/new">
-              <Plus className="h-4 w-4" />
+            <Link
+              href="/ledgerease/new"
+              className="flex items-center gap-1.5 rounded-xl bg-white text-ledger-600 hover:bg-ledger-50 px-3 py-1.5 text-[13px] font-semibold transition-colors"
+            >
+              <Plus className="h-3.5 w-3.5" />
               新增記帳
             </Link>
-          </Button>
+          </div>
         </div>
       </div>
 
@@ -117,48 +118,47 @@ export default async function LedgerPage({ searchParams }: PageProps) {
 
       {/* 統計卡片 */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
-        <Card>
-          <CardContent className="pt-4 pb-4">
-            <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
-              <TrendingDown className="h-3.5 w-3.5 text-violet-500" />
-              期間總支出
-            </div>
-            <div className="text-2xl font-bold text-violet-600">
-              ${total.toLocaleString('zh-TW', { minimumFractionDigits: 0 })}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4 pb-4">
-            <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
-              <BookOpen className="h-3.5 w-3.5" />
-              記錄筆數
-            </div>
-            <div className="text-2xl font-bold text-foreground">{count} 筆</div>
-          </CardContent>
-        </Card>
-        <Card className="col-span-2 sm:col-span-1">
-          <CardContent className="pt-4 pb-4">
-            <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
-              最多支出類別
-            </div>
-            {topCategory ? (
-              <div className="flex items-center gap-2">
-                <span className="text-xl">{CATEGORY_META[topCategory.category]?.icon ?? '📦'}</span>
-                <div>
-                  <div className="text-sm font-bold text-foreground leading-tight">
-                    {CATEGORY_META[topCategory.category]?.label ?? topCategory.category}
+        <div className="rounded-2xl border border-ledger-100 bg-white p-4">
+          <div className="flex items-center gap-2 text-xs font-medium text-neutral-500 uppercase tracking-wide mb-2">
+            <TrendingDown className="h-3.5 w-3.5 text-ledger-500" />
+            期間總支出
+          </div>
+          <div className="text-2xl font-bold text-ledger-600">
+            ${total.toLocaleString('zh-TW', { minimumFractionDigits: 0 })}
+          </div>
+        </div>
+        <div className="rounded-2xl border border-neutral-200 bg-white p-4">
+          <div className="flex items-center gap-2 text-xs font-medium text-neutral-500 uppercase tracking-wide mb-2">
+            <BookOpen className="h-3.5 w-3.5" />
+            記錄筆數
+          </div>
+          <div className="text-2xl font-bold text-neutral-800">{count} 筆</div>
+        </div>
+        <div className="rounded-2xl border border-neutral-200 bg-white p-4 col-span-2 sm:col-span-1">
+          <div className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-2">
+            最多支出類別
+          </div>
+          {topCategory ? (() => {
+              const meta = CATEGORY_META[topCategory.category] ?? CATEGORY_META.OTHER;
+              return (
+                <div className="flex items-center gap-2">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-neutral-100 flex-shrink-0">
+                    <meta.Icon className="h-4 w-4" strokeWidth={1.75} style={{ color: meta.color }} />
                   </div>
-                  <div className="text-xs text-muted-foreground">
-                    ${topCategory.total.toLocaleString('zh-TW', { minimumFractionDigits: 0 })}
+                  <div>
+                    <div className="text-sm font-bold text-neutral-800 leading-tight">
+                      {meta.label}
+                    </div>
+                    <div className="text-xs text-neutral-500">
+                      ${topCategory.total.toLocaleString('zh-TW', { minimumFractionDigits: 0 })}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ) : (
-              <div className="text-sm text-muted-foreground">—</div>
-            )}
-          </CardContent>
-        </Card>
+              );
+            })() : (
+            <div className="text-sm text-neutral-400">—</div>
+          )}
+        </div>
       </div>
 
       {/* 圖表 */}

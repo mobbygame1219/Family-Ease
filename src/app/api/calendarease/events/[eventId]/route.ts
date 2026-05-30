@@ -68,6 +68,7 @@ export async function PUT(
       isAllDay,
       color,
       notifyBefore,
+      attendeeIds,
     } = body as {
       title?: string;
       description?: string;
@@ -77,6 +78,7 @@ export async function PUT(
       isAllDay?: boolean;
       color?: string;
       notifyBefore?: number;
+      attendeeIds?: string;
     };
 
     const updated = await prisma.calendarEvent.update({
@@ -90,6 +92,7 @@ export async function PUT(
         ...(isAllDay !== undefined && { isAllDay }),
         ...(color !== undefined && { color }),
         ...(notifyBefore !== undefined && { notifyBefore }),
+        ...(attendeeIds !== undefined && { attendeeIds }),
       },
       include: {
         createdBy: { select: { id: true, name: true } },

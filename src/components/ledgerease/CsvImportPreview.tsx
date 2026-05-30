@@ -137,8 +137,8 @@ export default function CsvImportPreview({ items: initial, onReset }: Props) {
                 />
 
                 {/* Category icon */}
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-muted text-lg shrink-0">
-                  {meta.icon}
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-muted shrink-0">
+                  <meta.Icon className="h-[18px] w-[18px]" strokeWidth={1.75} style={{ color: meta.color }} />
                 </div>
 
                 {/* Description + meta */}
@@ -159,7 +159,7 @@ export default function CsvImportPreview({ items: initial, onReset }: Props) {
                 >
                   {Object.entries(CATEGORY_META).map(([key, m]) => (
                     <option key={key} value={key}>
-                      {m.icon} {m.label}
+                      {m.label}
                     </option>
                   ))}
                 </select>
