@@ -114,6 +114,22 @@ const CAT_BORDER: Record<EventCat, string> = {
   pet:      'var(--cal-pet-accent)',
 };
 
+// ─── Per-event color helpers ──────────────────────────────────────────────────
+// For pet-log events: use the stored `ev.color` directly (set from pet.color).
+// For all other events: fall back to the CSS-variable-based category palette.
+function evBg(ev: CalEvent): string {
+  if (ev.isFromPetLog && ev.color) return ev.color + '22'; // ~13 % opacity tint
+  return CAT_BG[evCat(ev)];
+}
+function evBorder(ev: CalEvent): string {
+  if (ev.isFromPetLog && ev.color) return ev.color;
+  return CAT_BORDER[evCat(ev)];
+}
+function evDeep(ev: CalEvent): string {
+  if (ev.isFromPetLog && ev.color) return ev.color;
+  return CAT_DEEP[evCat(ev)];
+}
+
 function evPos(ev: CalEvent) {
   const s  = parseISO(ev.startAt);
   const e  = parseISO(ev.endAt);
@@ -137,16 +153,10 @@ export default function CalendarView({
   currentUserId: string;
   onOpenPrepTask?: (eventId: string) => void;
 }) {
-  const [view, setView] = useState<ViewMode>(() => {
-    try {
-      const saved = typeof window !== 'undefined'
-        ? localStorage.getItem('cal-view-mode')
-        : null;
-      if (saved === 'week' || saved === 'month' || saved === 'list') return saved;
-    } catch { /* localStorage blocked (SSR / incognito) */ }
-    return 'month';
-  });
-  const [focus,    setFocus]    = useState(() => new Date());
+  // Always start with 'month' on SSR to avoid hydration mismatch.
+  // After mount, restore the user's last-used view from localStorage.
+  const [view, setView] = useState<ViewMode>('month');
+  const [focus,    setFocus]    = useState<Date>(new Date(0)); // overwritten after mount
   const [events,   setEvents]   = useState<CalEvent[]>([]);
   const [loading,  setLoading]  = useState(true);
   const [selEv,    setSelEv]    = useState<CalEvent | null>(null);
@@ -155,6 +165,17 @@ export default function CalendarView({
   const [dragId,   setDragId]   = useState<string | null>(null);
   const [dragOff,  setDragOff]  = useState(0);
   const wrapRef = useRef<HTMLDivElement>(null);
+
+  // ── Initialise date + restore view after hydration (avoids SSR mismatch) ─────
+  useEffect(() => {
+    setFocus(new Date());
+    try {
+      const saved = localStorage.getItem('cal-view-mode');
+      if (saved === 'week' || saved === 'month' || saved === 'list') {
+        setView(saved as ViewMode);
+      }
+    } catch { /* localStorage blocked (incognito / SSR) */ }
+  }, []);
 
   // ── Listen for prep-task drag-to-calendar events ────────────────────────────
   useEffect(() => {
@@ -255,6 +276,13 @@ export default function CalendarView({
   }
 
   // ── Render ──────────────────────────────────────────────────────────────────
+  // Guard: show nothing until after hydration (focus starts at epoch 0)
+  if (focus.getTime() === 0) return (
+    <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
+      載入中…
+    </div>
+  );
+
   return (
     <div
       ref={wrapRef}
@@ -417,11 +445,16 @@ function WeekView({
     dayIdx: number; minStart: number; minEnd: number;
   } | null>(null);
 
-  // ── Prep-task drag-over preview ────────────────────────────────────────
-  // We can't call dataTransfer.getData() during dragover (browser security),
-  // so the title is received via the cal:prepDragStart custom event.
+  // ── Drag-over previews (prep-task & pet) ──────────────────────────────
+  // dataTransfer.getData() is blocked during dragover (browser security),
+  // so label text is received via custom events dispatched on dragstart.
   const prepDragTitle = useRef('');
   const [prepDragPreview, setPrepDragPreview] = useState<{
+    dayIdx: number; slotMin: number;
+  } | null>(null);
+
+  const petDragName = useRef('');
+  const [petDragPreview, setPetDragPreview] = useState<{
     dayIdx: number; slotMin: number;
   } | null>(null);
 
@@ -429,11 +462,19 @@ function WeekView({
     const onPrepStart = (e: Event) => {
       prepDragTitle.current = (e as CustomEvent<{ title: string }>).detail.title;
     };
-    const onDragEnd = () => setPrepDragPreview(null);
+    const onPetStart = (e: Event) => {
+      petDragName.current = (e as CustomEvent<{ name: string }>).detail.name;
+    };
+    const onDragEnd = () => {
+      setPrepDragPreview(null);
+      setPetDragPreview(null);
+    };
     window.addEventListener('cal:prepDragStart', onPrepStart);
+    window.addEventListener('cal:petDragStart',  onPetStart);
     window.addEventListener('dragend', onDragEnd);
     return () => {
       window.removeEventListener('cal:prepDragStart', onPrepStart);
+      window.removeEventListener('cal:petDragStart',  onPetStart);
       window.removeEventListener('dragend', onDragEnd);
     };
   }, []);
@@ -547,7 +588,7 @@ function WeekView({
                       data-event="1"
                       onClick={e => { e.stopPropagation(); onEventClick(ev, e.clientX, e.clientY); }}
                       className="text-[9px] font-medium rounded px-1 truncate cursor-pointer leading-4"
-                      style={{ background: CAT_BG[cat], color: CAT_DEEP[cat] }}
+                      style={{ background: evBg(ev), color: evDeep(ev) }}
                     >
                       {ev.title}
                     </div>
@@ -584,33 +625,50 @@ function WeekView({
               style={{ height: GRID_H, borderColor: 'var(--cal-border)', minWidth: 0 }}
               onDragOver={e => {
                 e.preventDefault();
-                // Show a time-slot preview when dragging a prep-task card
-                if (e.dataTransfer.types.includes('application/prep-task')) {
-                  const rect    = e.currentTarget.getBoundingClientRect();
-                  const slotMin = DAY_START + Math.max(0, Math.floor((e.clientY - rect.top) / SLOT_H)) * 30;
+                const types   = e.dataTransfer.types;
+                const rect    = e.currentTarget.getBoundingClientRect();
+                const slotMin = DAY_START + Math.max(0, Math.floor((e.clientY - rect.top) / SLOT_H)) * 30;
+                if (types.includes('application/prep-task')) {
                   setPrepDragPreview({ dayIdx: i, slotMin });
+                } else if (types.includes('application/pet')) {
+                  setPetDragPreview({ dayIdx: i, slotMin });
                 }
               }}
               onDrop={e => {
-                setPrepDragPreview(null);   // always clear the hover preview on drop
+                setPrepDragPreview(null);  // always clear previews on drop
+                setPetDragPreview(null);
+
+                const rect    = e.currentTarget.getBoundingClientRect();
+                const slotMin = DAY_START + Math.max(0, Math.floor((e.clientY - rect.top) / SLOT_H)) * 30;
+                const start   = new Date(day);
+                start.setHours(Math.floor(slotMin / 60), slotMin % 60, 0, 0);
+                const end = addMinutes(start, 60);
+
+                // Pet drag from LeftPanel
+                const petJson = e.dataTransfer.getData('application/pet');
+                if (petJson) {
+                  try {
+                    const pet = JSON.parse(petJson) as { petId: string; petName: string; petType: string };
+                    window.dispatchEvent(new CustomEvent('cal:openModal', {
+                      detail: { title: pet.petName, startAt: start.toISOString(), endAt: end.toISOString() },
+                    }));
+                  } catch { /* ignore malformed data */ }
+                  return;
+                }
+
                 // Prep-task drag from LeftPanel
                 const prepJson = e.dataTransfer.getData('application/prep-task');
                 if (prepJson) {
                   try {
                     const task = JSON.parse(prepJson) as { title: string; suggestedAt: string | null };
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    const slotMin = DAY_START + Math.max(0, Math.floor((e.clientY - rect.top) / SLOT_H)) * 30;
-                    const start = new Date(day);
-                    start.setHours(Math.floor(slotMin / 60), slotMin % 60, 0, 0);
-                    const end = addMinutes(start, 60);
                     window.dispatchEvent(new CustomEvent('cal:openModal', {
                       detail: { title: task.title, startAt: start.toISOString(), endAt: end.toISOString() },
                     }));
                   } catch { /* ignore malformed data */ }
                   return;
                 }
+
                 // Regular event-move drag
-                const rect = e.currentTarget.getBoundingClientRect();
                 onDrop(day, Math.max(0, Math.floor((e.clientY - rect.top) / SLOT_H)));
               }}
               onMouseDown={e => {
@@ -717,6 +775,44 @@ function WeekView({
                 );
               })()}
 
+              {/* Pet drop preview ghost */}
+              {petDragPreview?.dayIdx === i && (() => {
+                const fmtSlot  = (m: number) =>
+                  `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+                const ghostTop = (petDragPreview.slotMin - DAY_START) / 30 * SLOT_H;
+                return (
+                  <div
+                    key="pet-preview"
+                    className="absolute left-0.5 right-0.5 z-20 rounded-md pointer-events-none select-none overflow-hidden"
+                    style={{
+                      top:        ghostTop,
+                      height:     SLOT_H * 2,
+                      background: 'rgba(45,107,45,0.12)',
+                      border:     '2px dashed var(--cal-pet-accent)',
+                    }}
+                  >
+                    <div
+                      className="absolute inset-x-0 top-0 h-0.5"
+                      style={{ background: 'var(--cal-pet-accent)', opacity: 0.6 }}
+                    />
+                    <div className="px-1.5 pt-1">
+                      <div
+                        className="text-[10px] font-semibold leading-tight truncate"
+                        style={{ color: '#2d6b2d' }}
+                      >
+                        🐾 {petDragName.current}
+                      </div>
+                      <div
+                        className="text-[9px] leading-tight mt-0.5 opacity-75"
+                        style={{ color: '#2d6b2d' }}
+                      >
+                        {fmtSlot(petDragPreview.slotMin)} – {fmtSlot(petDragPreview.slotMin + 60)}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
               {/* Timed events */}
               {dayEvs.map(ev => {
                 const cat = evCat(ev);
@@ -736,9 +832,9 @@ function WeekView({
                     style={{
                       top:             top + 1,
                       height:          height - 2,
-                      background:      CAT_BG[cat],
-                      borderLeftColor: CAT_BORDER[cat],
-                      color:           CAT_DEEP[cat],
+                      background:      evBg(ev),
+                      borderLeftColor: evBorder(ev),
+                      color:           evDeep(ev),
                     }}
                   >
                     <div className="font-semibold truncate leading-tight text-[11px]">{ev.title}</div>
@@ -827,7 +923,7 @@ function MonthView({
                       data-event="1"
                       onClick={e => { e.stopPropagation(); onEventClick(ev, e.clientX, e.clientY); }}
                       className="text-[10px] rounded px-1 truncate leading-[14px] cursor-pointer"
-                      style={{ background: CAT_BG[cat], color: CAT_DEEP[cat] }}
+                      style={{ background: evBg(ev), color: evDeep(ev) }}
                     >
                       {ev.title}
                     </div>
@@ -903,13 +999,13 @@ function ListView({
                     key={ev.id}
                     onClick={e => onEventClick(ev, e.clientX, e.clientY)}
                     className="flex items-start gap-3 rounded-xl p-3 cursor-pointer hover:shadow-sm border-l-2 transition-all"
-                    style={{ background: CAT_BG[cat], borderLeftColor: CAT_BORDER[cat] }}
+                    style={{ background: evBg(ev), borderLeftColor: evBorder(ev) }}
                   >
-                    <Clock className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" style={{ color: CAT_DEEP[cat] }} />
+                    <Clock className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" style={{ color: evDeep(ev) }} />
                     <div className="flex-1 min-w-0">
                       <div
                         className="text-sm font-medium truncate"
-                        style={{ color: CAT_DEEP[cat] }}
+                        style={{ color: evDeep(ev) }}
                       >
                         {ev.title}
                       </div>
@@ -972,15 +1068,15 @@ function DetailPopover({
       style={{
         left,
         top,
-        background:   CAT_BG[cat],
-        borderColor:  CAT_BORDER[cat],
+        background:   evBg(ev),
+        borderColor:  evBorder(ev),
       }}
     >
       {/* Header */}
       <div className="flex items-start justify-between gap-2 p-4 pb-2">
         <h3
           className="text-sm font-semibold leading-snug"
-          style={{ color: CAT_DEEP[cat], fontFamily: "'Lora', serif" }}
+          style={{ color: evDeep(ev), fontFamily: "'Lora', serif" }}
         >
           {ev.title}
         </h3>

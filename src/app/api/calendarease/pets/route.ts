@@ -35,9 +35,11 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { name, type, birthday, groupId } = body as {
+    const { name, type, color, quickActions, birthday, groupId } = body as {
       name: string;
       type: string;
+      color?: string;
+      quickActions?: string;
       birthday?: string;
       groupId: string;
     };
@@ -67,6 +69,8 @@ export async function POST(request: Request) {
       data: {
         name,
         type,
+        color: color ?? null,
+        quickActions: quickActions ?? null,
         birthday: birthday ? new Date(birthday) : undefined,
         groupId,
         createdById: session.user.id,

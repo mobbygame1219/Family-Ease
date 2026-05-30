@@ -59,7 +59,7 @@ export async function POST(
     // Fetch pet to get name and groupId
     const pet = await prisma.pet.findUnique({
       where: { id: petId },
-      select: { id: true, name: true, groupId: true },
+      select: { id: true, name: true, groupId: true, color: true },
     });
     if (!pet) {
       return NextResponse.json({ error: '找不到此寵物' }, { status: 404 });
@@ -85,9 +85,10 @@ export async function POST(
           startAt:      loggedAtDate,
           endAt:        loggedAtDate,
           isAllDay:     false,
-          color:        '#f97316', // orange — visually distinct from regular events
+          color:        pet.color ?? '#57a65f', // use pet's color, fallback to green
           notifyBefore: 0,
           isFromPetLog: true,
+          petId:        pet.id,
           groupId:      pet.groupId,
           createdById:  session.user.id,
         },

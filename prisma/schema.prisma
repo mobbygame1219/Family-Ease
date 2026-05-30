@@ -348,6 +348,7 @@ model CalendarEvent {
   notifyBefore Int      @default(15)
   attendeeIds  String?
   isFromPetLog Boolean  @default(false)
+  petId        String?
   createdAt    DateTime @default(now())
 
   groupId     String
@@ -355,6 +356,7 @@ model CalendarEvent {
 
   group     CalendarGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
   createdBy User          @relation("CalendarEventCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  pet       Pet?          @relation(fields: [petId], references: [id], onDelete: SetNull)
   prepTasks PrepTask[]
 }
 
@@ -375,19 +377,22 @@ model PrepTask {
 }
 
 model Pet {
-  id        String    @id @default(cuid())
-  name      String
-  type      String
-  birthday  DateTime?
-  photoUrl  String?
-  createdAt DateTime  @default(now())
+  id           String    @id @default(cuid())
+  name         String
+  type         String
+  color        String?
+  quickActions String?
+  birthday     DateTime?
+  photoUrl     String?
+  createdAt    DateTime  @default(now())
 
   groupId     String
   createdById String
 
-  group     CalendarGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  createdBy User          @relation("PetCreator", fields: [createdById], references: [id], onDelete: Cascade)
-  logs      PetLog[]
+  group          CalendarGroup  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  createdBy      User           @relation("PetCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  logs           PetLog[]
+  calendarEvents CalendarEvent[]
 }
 
 model PetLog {
