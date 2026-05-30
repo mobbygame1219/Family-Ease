@@ -48,13 +48,13 @@ export default async function FridgePage() {
   const { family, familyId } = await getFamilyData(session!.user.id);
 
   const items = await prisma.fridgeItem.findMany({
-    where: { familyId, used: false },
+    where: { fridge: { familyId }, used: false },
     include: { addedBy: { select: { id: true, name: true } } },
     orderBy: { createdAt: 'desc' },
   });
 
   const usedItems = await prisma.fridgeItem.findMany({
-    where: { familyId, used: true },
+    where: { fridge: { familyId }, used: true },
     include: { addedBy: { select: { id: true, name: true } } },
     orderBy: { usedAt: 'desc' },
     take: 5,

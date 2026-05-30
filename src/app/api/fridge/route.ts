@@ -23,6 +23,20 @@ async function getFamilyId(userId: string) {
   return membership.familyId;
 }
 
+/** Get or create a default fridge for the family */
+async function getOrCreateDefaultFridgeId(familyId: string, userId: string) {
+  const existing = await prisma.fridge.findFirst({
+    where: { familyId },
+    orderBy: { createdAt: 'asc' },
+  });
+  if (existing) return existing.id;
+
+  const fridge = await prisma.fridge.create({
+    data: { name: '冰箱', familyId, createdById: userId },
+  });
+  return fridge.id;
+}
+
 export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
@@ -32,7 +46,7 @@ export async function GET() {
   const familyId = await getFamilyId(session.user.id);
 
   const items = await prisma.fridgeItem.findMany({
-    where: { familyId, used: false },
+    where: { fridge: { familyId }, used: false },
     include: {
       addedBy: { select: { id: true, name: true } },
     },
@@ -55,6 +69,7 @@ export async function POST(request: Request) {
   }
 
   const familyId = await getFamilyId(session.user.id);
+  const fridgeId = await getOrCreateDefaultFridgeId(familyId, session.user.id);
 
   const item = await prisma.fridgeItem.create({
     data: {
@@ -64,7 +79,7 @@ export async function POST(request: Request) {
       price: price ?? null,
       expiresAt: expiresAt ? new Date(expiresAt) : null,
       addedById: session.user.id,
-      familyId,
+      fridgeId,
     },
   });
 

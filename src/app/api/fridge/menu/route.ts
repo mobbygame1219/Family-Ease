@@ -20,7 +20,7 @@ const membership = await prisma.familyMember.findFirst({
 });
 
 const fridgeItems = await prisma.fridgeItem.findMany({
-  where: { familyId: membership?.familyId, used: false },
+  where: { fridge: { familyId: membership?.familyId }, used: false },
   select: { name: true, quantity: true, unit: true },
 });
 
