@@ -153,16 +153,10 @@ export default function CalendarView({
   currentUserId: string;
   onOpenPrepTask?: (eventId: string) => void;
 }) {
-  const [view, setView] = useState<ViewMode>(() => {
-    try {
-      const saved = typeof window !== 'undefined'
-        ? localStorage.getItem('cal-view-mode')
-        : null;
-      if (saved === 'week' || saved === 'month' || saved === 'list') return saved;
-    } catch { /* localStorage blocked (SSR / incognito) */ }
-    return 'month';
-  });
-  const [focus,    setFocus]    = useState(() => new Date());
+  // Always start with 'month' on SSR to avoid hydration mismatch.
+  // After mount, restore the user's last-used view from localStorage.
+  const [view, setView] = useState<ViewMode>('month');
+  const [focus,    setFocus]    = useState<Date>(new Date(0)); // overwritten after mount
   const [events,   setEvents]   = useState<CalEvent[]>([]);
   const [loading,  setLoading]  = useState(true);
   const [selEv,    setSelEv]    = useState<CalEvent | null>(null);
@@ -171,6 +165,17 @@ export default function CalendarView({
   const [dragId,   setDragId]   = useState<string | null>(null);
   const [dragOff,  setDragOff]  = useState(0);
   const wrapRef = useRef<HTMLDivElement>(null);
+
+  // ── Initialise date + restore view after hydration (avoids SSR mismatch) ─────
+  useEffect(() => {
+    setFocus(new Date());
+    try {
+      const saved = localStorage.getItem('cal-view-mode');
+      if (saved === 'week' || saved === 'month' || saved === 'list') {
+        setView(saved as ViewMode);
+      }
+    } catch { /* localStorage blocked (incognito / SSR) */ }
+  }, []);
 
   // ── Listen for prep-task drag-to-calendar events ────────────────────────────
   useEffect(() => {
@@ -271,6 +276,13 @@ export default function CalendarView({
   }
 
   // ── Render ──────────────────────────────────────────────────────────────────
+  // Guard: show nothing until after hydration (focus starts at epoch 0)
+  if (focus.getTime() === 0) return (
+    <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
+      載入中…
+    </div>
+  );
+
   return (
     <div
       ref={wrapRef}
