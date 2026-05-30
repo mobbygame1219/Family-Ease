@@ -25,6 +25,8 @@ model User {
   receivedSettlements Settlement[] @relation("Receiver")
   activities    Activity[]
   fridgeItems   FridgeItem[]
+  fridgesCreated Fridge[]       @relation("FridgeCreator")
+  recipesCreated Recipe[]       @relation("RecipeCreator")
   familyMembers FamilyMember[]
   transactions  Transaction[]
 
@@ -34,6 +36,7 @@ model User {
   calendarEventsCreated CalendarEvent[]  @relation("CalendarEventCreator")
   petsCreated           Pet[]            @relation("PetCreator")
   petLogsLogged         PetLog[]         @relation("PetLogLogger")
+  prepTasksCreated      PrepTask[]       @relation("PrepTaskCreator")
 }
 
 model Group {
@@ -160,6 +163,19 @@ enum ActivityType {
   SETTLEMENT
   MEMBER_JOINED
 }
+model Fridge {
+  id          String      @id @default(cuid())
+  name        String
+  emoji       String      @default("🧊")
+  createdAt   DateTime    @default(now())
+  familyId    String
+  createdById String
+
+  family      FamilyGroup @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  createdBy   User        @relation("FridgeCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  items       FridgeItem[]
+}
+
 model FridgeItem {
   id        String    @id @default(cuid())
   name      String
@@ -172,10 +188,10 @@ model FridgeItem {
   createdAt DateTime  @default(now())
 
   addedById  String
-  familyId   String
+  fridgeId   String
 
-  addedBy    User        @relation(fields: [addedById], references: [id], onDelete: Cascade)
-  family     FamilyGroup @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  addedBy    User   @relation(fields: [addedById], references: [id], onDelete: Cascade)
+  fridge     Fridge @relation(fields: [fridgeId], references: [id], onDelete: Cascade)
 }
 
 model FamilyGroup {
@@ -184,8 +200,57 @@ model FamilyGroup {
   createdAt DateTime @default(now())
   createdById String
 
-  members     FamilyMember[]
-  fridgeItems FridgeItem[]
+  members  FamilyMember[]
+  fridges  Fridge[]
+  recipes  Recipe[]
+}
+
+// ── Recipe Database ───────────────────────────────────────────────────────────
+
+enum RecipeCategory {
+  BREAKFAST
+  LUNCH
+  DINNER
+  SNACK
+}
+
+model Recipe {
+  id          String         @id @default(cuid())
+  title       String
+  description String?
+  servings    Int            @default(2)
+  cookTime    Int?
+  category    RecipeCategory @default(DINNER)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  familyId    String
+  createdById String
+
+  family      FamilyGroup        @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  createdBy   User               @relation("RecipeCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  ingredients RecipeIngredient[]
+  steps       RecipeStep[]
+}
+
+model RecipeIngredient {
+  id       String  @id @default(cuid())
+  name     String
+  quantity Float
+  unit     String
+  optional Boolean @default(false)
+
+  recipeId String
+  recipe   Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+}
+
+model RecipeStep {
+  id          String @id @default(cuid())
+  order       Int
+  description String
+
+  recipeId String
+  recipe   Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
 }
 
 model FamilyMember {
@@ -281,7 +346,9 @@ model CalendarEvent {
   isAllDay     Boolean  @default(false)
   color        String   @default("#8b5cf6")
   notifyBefore Int      @default(15)
+  attendeeIds  String?
   isFromPetLog Boolean  @default(false)
+  petId        String?
   createdAt    DateTime @default(now())
 
   groupId     String
@@ -289,22 +356,43 @@ model CalendarEvent {
 
   group     CalendarGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
   createdBy User          @relation("CalendarEventCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  pet       Pet?          @relation(fields: [petId], references: [id], onDelete: SetNull)
+  prepTasks PrepTask[]
+}
+
+model PrepTask {
+  id          String    @id @default(cuid())
+  title       String
+  notes       String?
+  isDone      Boolean   @default(false)
+  suggestedAt DateTime?
+  order       Int       @default(0)
+  createdAt   DateTime  @default(now())
+
+  eventId     String
+  createdById String
+
+  event     CalendarEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  createdBy User          @relation("PrepTaskCreator", fields: [createdById], references: [id], onDelete: Cascade)
 }
 
 model Pet {
-  id        String    @id @default(cuid())
-  name      String
-  type      String
-  birthday  DateTime?
-  photoUrl  String?
-  createdAt DateTime  @default(now())
+  id           String    @id @default(cuid())
+  name         String
+  type         String
+  color        String?
+  quickActions String?
+  birthday     DateTime?
+  photoUrl     String?
+  createdAt    DateTime  @default(now())
 
   groupId     String
   createdById String
 
-  group     CalendarGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  createdBy User          @relation("PetCreator", fields: [createdById], references: [id], onDelete: Cascade)
-  logs      PetLog[]
+  group          CalendarGroup  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  createdBy      User           @relation("PetCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  logs           PetLog[]
+  calendarEvents CalendarEvent[]
 }
 
 model PetLog {
